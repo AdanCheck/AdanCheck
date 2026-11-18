@@ -1,10 +1,10 @@
 // Service worker: permite usar la app sin conexión.
-// Si cambiás archivos de la carpeta libs/ o icons/, subí el número de VERSION.
-const VERSION = 'v1';
+// Si cambiás archivos de la carpeta  o , subí el número de VERSION.
+const VERSION = 'v2';
 const CORE = [
   './', './index.html', './manifest.webmanifest',
-  './libs/html5-qrcode.min.js', './libs/xlsx.full.min.js', './libs/jspdf.umd.min.js', './libs/jspdf.plugin.autotable.min.js',
-  './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'
+  './html5-qrcode.min.js', './xlsx.full.min.js', './jspdf.umd.min.js', './jspdf.plugin.autotable.min.js',
+  './icon-192.png', './icon-512.png', './icon-maskable-512.png'
 ];
 
 self.addEventListener('install', e => {

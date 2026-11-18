@@ -5,7 +5,7 @@ App web para leer artículos con la cámara del celular y controlar los traslado
 ## Publicarla en GitHub Pages
 
 1. Creá una cuenta en github.com (si no tenés) y un repositorio nuevo, por ejemplo `lecturas-pintolindo`. Con la cuenta gratuita, el repositorio tiene que ser público.
-2. En el repositorio, tocá **Add file > Upload files** y subí todo el contenido de esta carpeta (`index.html`, `sw.js`, `manifest.webmanifest`, `README.md` y las carpetas `libs` e `icons`). Confirmá con **Commit changes**.
+2. En el repositorio, tocá **Add file > Upload files** y subí todo el contenido de esta carpeta (todos los archivos van sueltos en la raíz del repositorio, sin carpetas). Confirmá con **Commit changes**.
 3. Andá a **Settings > Pages**. En **Source** elegí **Deploy from a branch**, rama `main`, carpeta `/ (root)`, y guardá.
 4. Al minuto la app queda en `https://TU-USUARIO.github.io/lecturas-pintolindo/`.
 
@@ -56,4 +56,4 @@ Las lecturas se guardan solo en el teléfono donde se hicieron. Si se borran los
 
 ## Actualizar la app
 
-Reemplazá `index.html` en GitHub. Los teléfonos toman la versión nueva la próxima vez que abran la app con conexión. Si cambiás algo de `libs/` o `icons/`, cambiá también `VERSION` en `sw.js` (por ejemplo, de `v1` a `v2`).
+Reemplazá `index.html` en GitHub. Los teléfonos toman la versión nueva la próxima vez que abran la app con conexión. Si cambiás alguna librería o ícono, cambiá también `VERSION` en `sw.js` (por ejemplo, de `v1` a `v2`).
