@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1546B8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lecturas">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Lecturas Pintolindo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF1F4; --surface:#FFFFFF; --surface-2:#F6F8FA; --ink:#18202B; --muted:#5B6676; --line:#D5DBE3;
+  --brand:#1546B8; --brand-ink:#FFFFFF; --accent:#F5B800; --accent-soft:#FFF1C2;
+  --ok:#157F4F; --err:#C2341B; --err-soft:#FDE8E2; --warn-soft:#FFF4D6;
+  --radius:6px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10151C; --surface:#1A212B; --surface-2:#212A36; --ink:#E9EDF2; --muted:#9AA6B5; --line:#2C3643;
+    --brand:#5B86F5; --brand-ink:#0B1020; --accent:#FFC81F; --accent-soft:#3A3212;
+    --ok:#3CCB86; --err:#FF7A5C; --err-soft:#3A1E18; --warn-soft:#352D14;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10151C; --surface:#1A212B; --surface-2:#212A36; --ink:#E9EDF2; --muted:#9AA6B5; --line:#2C3643;
+  --brand:#5B86F5; --brand-ink:#0B1020; --accent:#FFC81F; --accent-soft:#3A3212;
+  --ok:#3CCB86; --err:#FF7A5C; --err-soft:#3A1E18; --warn-soft:#352D14;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.45 Barlow,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.cond{font-family:"Barlow Condensed","Arial Narrow",Barlow,sans-serif}
+
+header.top{position:sticky;top:0;z-index:5;background:var(--brand);color:var(--brand-ink);
+  padding:calc(env(safe-area-inset-top,0px) + 10px) 16px 10px;display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.wordmark{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:24px;line-height:1}
+.screen-name{font-size:15px;opacity:.9}
+main{max-width:720px;margin:0 auto;padding:16px 16px calc(96px + env(safe-area-inset-bottom,0px))}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;display:flex;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs button{flex:1;min-height:62px;border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer}
+nav.tabs button svg{width:24px;height:24px}
+nav.tabs button[aria-current="page"]{color:var(--brand)}
+nav.tabs button{position:relative}
+nav.tabs button[aria-current="page"]::after{content:"";position:absolute;top:0;left:50%;width:32px;height:3px;border-radius:0 0 2px 2px;background:var(--brand);transform:translateX(-50%)}
+
+h1.h{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:30px;line-height:1.1;margin:4px 0 12px}
+h2.h2{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:22px;margin:0 0 8px}
+.muted{color:var(--muted)} .small{font-size:14px}
+.block{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.note{border-radius:var(--radius);padding:12px 14px;margin:0 0 14px;font-size:15px}
+.note.warn{background:var(--warn-soft);border-left:6px solid var(--accent)}
+.note.err{background:var(--err-soft);border-left:6px solid var(--err)}
+
+.field{display:block;margin:0 0 14px}
+.field>span{display:block;font-weight:600;font-size:15px;margin-bottom:6px}
+.field input,.field select{width:100%;min-height:50px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-2)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.grid2.stack{grid-template-columns:1fr}}
+
+.btn{min-height:50px;padding:10px 18px;border-radius:var(--radius);border:1px solid transparent;font-weight:600;font-size:16px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none}
+.btn.primary{background:var(--brand);color:var(--brand-ink)}
+.btn.ghost{background:var(--surface);border-color:var(--line);color:var(--ink)}
+.btn.danger{background:none;border-color:var(--err);color:var(--err)}
+.btn.big{width:100%;min-height:58px;font-size:18px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.finish{width:100%;min-height:58px;font-size:18px;background:var(--ink);color:var(--bg);margin-top:16px}
+.link{background:none;border:0;padding:0;color:var(--brand);font-weight:600;text-decoration:underline;cursor:pointer}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row>.btn{flex:1}
+
+fieldset.seg{border:0;padding:0;margin:0 0 14px}
+fieldset.seg legend{font-weight:600;font-size:15px;margin-bottom:6px;padding:0}
+.seg-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.seg-btns button{min-height:56px;padding:6px;border:1px solid var(--line);background:var(--surface-2);border-radius:var(--radius);font-weight:600;font-size:15px;line-height:1.15;cursor:pointer}
+.seg-btns button[aria-pressed="true"]{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+
+.dep{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.dep i{width:14px;height:18px;border-radius:2px;display:inline-block;box-shadow:inset 0 0 0 1px rgba(0,0,0,.15)}
+
+/* Pantalla de escaneo */
+.sesion-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.sesion-head .tipo{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:26px;line-height:1.1}
+.ruta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:4px 0 2px;font-size:17px}
+.ruta .arrow{color:var(--muted)}
+.meta{color:var(--muted);font-size:14px}
+.cam{position:relative;background:#0E1218;border-radius:var(--radius);overflow:hidden;min-height:220px;margin-bottom:10px}
+#reader{width:100%}
+#reader video{display:block;width:100%!important;height:auto!important}
+.cam-idle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#C9D2DD;text-align:center;padding:16px}
+.cam-idle svg{width:56px;height:56px;opacity:.7}
+.cam.on .cam-idle{display:none}
+
+.last{display:grid;grid-template-columns:16px 1fr auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;min-height:92px;margin:12px 0}
+.last .chip{background:var(--accent)}
+.last.nc .chip{background:var(--err)}
+.last .info{padding:12px 14px;min-width:0}
+.last .d{font-weight:600;font-size:18px;line-height:1.2;overflow-wrap:anywhere}
+.last .c{color:var(--muted);font-size:14px;margin-top:2px;overflow-wrap:anywhere}
+.last .warn-t{color:var(--err);font-size:14px;font-weight:600;margin-top:4px}
+.last .q{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:8px 16px 8px 4px}
+.last .q .plus{font-size:14px;font-weight:600;color:var(--muted)}
+.last .q .tot{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:46px;line-height:1}
+.last.empty{grid-template-columns:16px 1fr}
+.last.empty .chip{background:var(--line)}
+.last.empty .info{color:var(--muted);display:flex;align-items:center}
+.last.flash{animation:flash .6s ease-out}
+.last.nc.flash{animation:flashErr .8s ease-out}
+@keyframes flash{from{background:var(--accent-soft)}to{background:var(--surface)}}
+@keyframes flashErr{from{background:var(--err-soft)}to{background:var(--surface)}}
+@media (prefers-reduced-motion:reduce){.last.flash,.last.nc.flash{animation:none}}
+
+.qtyrow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.qtyrow>span{font-weight:600}
+.stepper{flex-shrink:0;display:inline-flex;align-items:stretch;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+.stepper button{min-width:50px;min-height:50px;border:0;background:var(--surface-2);font-size:24px;font-weight:600;cursor:pointer}
+.stepper output,.stepper .qbtn{min-width:56px;display:flex;align-items:center;justify-content:center;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-weight:700;font-size:24px;background:var(--surface);border:0;padding:0 6px}
+.stepper.sm button{min-width:44px;min-height:44px;font-size:20px}
+.stepper.sm .qbtn{min-width:52px;font-size:22px;cursor:pointer}
+
+.manual{display:flex;gap:8px}
+.manual input{flex:1;min-width:0;min-height:50px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+.sugs{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.sugs button{text-align:left;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);cursor:pointer}
+.sugs button small{display:block;color:var(--muted)}
+
+.totals{display:flex;gap:18px;flex-wrap:wrap;margin:16px 0 8px;align-items:baseline}
+.totals b{font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:28px;font-weight:700;margin-right:4px}
+.totals .nc-t{color:var(--err);font-weight:600}
+
+ul.lines{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+ul.lines li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+ul.lines li.nc{box-shadow:inset 4px 0 0 var(--err);padding-left:10px}
+.li-info{min-width:0;flex:1}
+.li-info .d{font-weight:600;line-height:1.2;overflow-wrap:anywhere}
+.li-info .c{color:var(--muted);font-size:13px;overflow-wrap:anywhere}
+.empty-list{color:var(--muted);padding:14px 0}
+
+/* Historial */
+details.filters{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:0 14px;margin-bottom:12px}
+details.filters summary{min-height:50px;display:flex;align-items:center;font-weight:600;cursor:pointer}
+details.filters[open]{padding-bottom:14px}
+.export-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:6px 0 12px}
+.export-bar .row{flex:0 0 auto}
+ul.hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.hist-item{width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.hi-top{display:flex;justify-content:space-between;gap:10px;font-weight:600}
+.hi-top .when{color:var(--muted);font-weight:500;font-size:14px;white-space:nowrap}
+.hi-meta{color:var(--muted);font-size:14px}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;background:var(--accent);color:#1A1400;font-size:12px;font-weight:600;margin-left:6px}
+
+/* Detalle */
+.back{background:none;border:0;color:var(--brand);font-weight:600;padding:6px 0;cursor:pointer;min-height:44px}
+dl.info{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0 0 14px}
+dl.info dt{color:var(--muted)} dl.info dd{margin:0;font-weight:500;overflow-wrap:anywhere}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+table.tbl{border-collapse:collapse;width:100%;font-size:14px}
+.tbl th,.tbl td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+.tbl th{background:var(--surface-2);font-weight:600;white-space:nowrap}
+.tbl td.n,.tbl th.n{text-align:right;font-variant-numeric:tabular-nums}
+.tbl tr.nc td{background:var(--err-soft)}
+
+/* Ajustes */
+ul.editable{list-style:none;margin:0 0 10px;padding:0}
+ul.editable li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+ul.editable li button{min-height:40px;min-width:40px;border:0;background:none;color:var(--err);font-size:15px;font-weight:600;cursor:pointer}
+.add-row{display:flex;gap:8px}
+.add-row input{flex:1;min-width:0;min-height:48px;padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-2)}
+.check{display:flex;align-items:center;gap:10px;min-height:44px}
+.check input{width:22px;height:22px}
+.map-preview{margin-top:10px}
+input[type=file].hidden{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+#toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);opacity:0;pointer-events:none;
+  background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:var(--radius);max-width:min(92vw,520px);font-weight:500;z-index:20;transition:opacity .2s,transform .2s}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.err{background:var(--err);color:#fff}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="wordmark">Pintolindo</span>
+  <span class="screen-name" id="screenName">Lectura</span>
+</header>
+<main id="main"></main>
+
+<nav class="tabs" id="tabs" aria-label="Secciones">
+  <button data-tab="lectura" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8" stroke-width="1.6"/></svg>
+    Lectura
+  </button>
+  <button data-tab="historial">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+    Historial
+  </button>
+  <button data-tab="ajustes">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>
+    Ajustes
+  </button>
+</nav>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script src="libs/html5-qrcode.min.js"></script>
+<script src="libs/xlsx.full.min.js"></script>
+<script src="libs/jspdf.umd.min.js"></script>
+<script src="libs/jspdf.plugin.autotable.min.js"></script>
+<script>
+'use strict';
+const APP_VERSION = '1.0.0';
+
+/* ---------- Utilidades ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const TIPOS = { salida: 'Salida por traslado', recepcion: 'Recepción de traslado', inventario: 'Inventario' };
+const TIPOS_CORTO = { salida: 'salida', recepcion: 'recepcion', inventario: 'inventario' };
+const esTraslado = t => t === 'salida' || t === 'recepcion';
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtFecha = iso => iso ? new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
+const fmtHora = iso => iso ? new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+const fmtFH = iso => iso ? `${fmtFecha(iso)} ${fmtHora(iso)}` : '';
+const nf = n => Number(n).toLocaleString('es-AR');
+const unidades = s => s.lines.reduce((a, l) => a + l.q, 0);
+const noCatalogados = s => s.lines.filter(l => l.nc).length;
+const pad2 = n => String(n).padStart(2, '0');
+function sello(iso) { const d = iso ? new Date(iso) : new Date(); return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}_${pad2(d.getHours())}${pad2(d.getMinutes())}`; }
+const normText = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const slug = s => normText(s).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'x';
+function normCode(s) { s = String(s ?? '').trim().toUpperCase(); if (/^\d+$/.test(s)) s = s.replace(/^0+(?=\d)/, ''); return s; }
+function genId() { const d = new Date(); return `L${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`; }
+
+let toastTimer;
+function toast(msg, tipo) {
+  const t = $('#toast'); t.textContent = msg; t.className = 'show' + (tipo === 'err' ? ' err' : '');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.className = '', tipo === 'err' ? 5000 : 2600);
+}
+function descargar(blob, nombre) {
+  const url = URL.createObjectURL(blob); const a = document.createElement('a');
+  a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/* ---------- Almacenamiento local ---------- */
+const store = {
+  get(k, def) { try { const v = localStorage.getItem('pl_' + k); return v ? JSON.parse(v) : def; } catch (e) { return def; } },
+  set(k, v) {
+    try { localStorage.setItem('pl_' + k, JSON.stringify(v)); return true; }
+    catch (e) { toast('No hay espacio para guardar en este teléfono. Exportá y eliminá lecturas viejas.', 'err'); return false; }
+  }
+};
+let config = Object.assign({ depositos: [], personas: [], sonido: true, vibrar: true, ultimo: {} }, store.get('config', {}));
+let catalog = store.get('catalog', null);   // { archivo, importado, items: [{ c, b: [], d }] }
+let sessions = store.get('sessions', []);
+let activeId = store.get('active', null);
+const saveConfig = () => store.set('config', config);
+const saveSessions = () => store.set('sessions', sessions);
+const activeSession = () => sessions.find(s => s.id === activeId && !s.fin) || null;
+
+/* ---------- Catálogo e índices ---------- */
+const idxBarras = new Map(), idxCodigo = new Map(); let busqueda = [];
+function indexar() {
+  idxBarras.clear(); idxCodigo.clear(); busqueda = [];
+  if (!catalog) return;
+  for (const it of catalog.items) {
+    if (it.c) idxCodigo.set(normCode(it.c), it);
+    for (const b of it.b) idxBarras.set(normCode(b), it);
+    busqueda.push({ it, s: normText(`${it.d} ${it.c} ${it.b.join(' ')}`) });
+  }
+}
+function buscarCodigo(raw) { const n = normCode(raw); return idxBarras.get(n) || idxCodigo.get(n) || null; }
+function buscarTexto(q, max = 8) {
+  const palabras = normText(q).split(/\s+/).filter(Boolean); if (!palabras.length) return [];
+  const out = [];
+  for (const r of busqueda) { if (palabras.every(p => r.s.includes(p))) { out.push(r.it); if (out.length >= max) break; } }
+  return out;
+}
+indexar();
+
+/* ---------- Depósitos con color de muestra ---------- */
+const PALETA = ['#C8361D', '#1546B8', '#157F4F', '#E0A400', '#7A3FB0', '#0E8A8A', '#D9632B', '#5A6B1F'];
+function depColor(n) { const i = config.depositos.indexOf(n); if (i >= 0) return PALETA[i % PALETA.length]; let h = 0; for (const ch of String(n)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return PALETA[h % PALETA.length]; }
+const depChip = n => `<span class="dep"><i style="background:${depColor(n)}"></i>${esc(n)}</span>`;
+function rutaHTML(s) { return esTraslado(s.tipo) ? `${depChip(s.origen)}<span class="arrow" aria-label="hacia">→</span>${depChip(s.destino)}` : depChip(s.origen); }
+
+/* ---------- Navegación ---------- */
+let vista = 'lectura', detalleId = null;
+const TITULOS = { lectura: 'Lectura', historial: 'Historial', ajustes: 'Ajustes', detalle: 'Detalle de lectura' };
+async function ir(v, id) {
+  if (vista === 'lectura' && v !== 'lectura') await detenerCamara();
+  vista = v; detalleId = id ?? null; render(); window.scrollTo(0, 0);
+}
+function render() {
+  $('#screenName').textContent = TITULOS[vista];
+  const tab = vista === 'detalle' ? 'historial' : vista;
+  document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'));
+  ({ lectura: renderLectura, historial: renderHistorial, ajustes: renderAjustes, detalle: renderDetalle })[vista]();
+}
+$('#tabs').addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (b) ir(b.dataset.tab); });
+$('#main').addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) ir(g.dataset.go, g.dataset.id); });
+
+function estadoCatalogo() {
+  if (!catalog) return `<div class="note warn">Todavía no hay catálogo cargado, así que todo lo que se escanee quedará como no catalogado. <button class="link" data-go="ajustes">Importar catálogo</button></div>`;
+  return `<p class="muted small">Catálogo: ${nf(catalog.items.length)} artículos, importado el ${fmtFH(catalog.importado)}.</p>`;
+}
+const opciones = (lista, sel) => `<option value="">Elegí una opción</option>` + lista.map(x => `<option ${x === sel ? 'selected' : ''}>${esc(x)}</option>`).join('');
+
+/* ---------- Pantalla: nueva lectura ---------- */
+let borrador = null;
+function renderLectura() { const s = activeSession(); s ? renderEscaneo(s) : renderNueva(); }
+
+function renderNueva() {
+  borrador = borrador || { tipo: config.ultimo.tipo || 'salida', origen: config.ultimo.origen || '', destino: config.ultimo.destino || '', persona: config.ultimo.persona || '', ref: '' };
+  const falta = !config.depositos.length || !config.personas.length;
+  $('#main').innerHTML = `
+    <h1 class="h">Nueva lectura</h1>
+    ${estadoCatalogo()}
+    ${falta ? `<div class="note warn">Antes de empezar, cargá los depósitos y los responsables. <button class="link" data-go="ajustes">Ir a Ajustes</button></div>` : ''}
+    <section class="block">
+      <fieldset class="seg"><legend>Tipo de movimiento</legend>
+        <div class="seg-btns" id="tipoSeg">${Object.entries(TIPOS).map(([k, v]) => `<button type="button" data-tipo="${k}" aria-pressed="${k === borrador.tipo}">${v}</button>`).join('')}</div>
+      </fieldset>
+      <div id="depCampos"></div>
+      <label class="field"><span>Responsable</span><select id="fPersona">${opciones(config.personas, borrador.persona)}</select></label>
+      <label class="field"><span>Referencia (opcional)</span><input id="fRef" placeholder="Número de remito o de movimiento" value="${esc(borrador.ref)}" autocomplete="off"></label>
+      <button class="btn primary big" id="btnEmpezar">Empezar lectura</button>
+    </section>`;
+  const pintarDep = () => {
+    $('#depCampos').innerHTML = esTraslado(borrador.tipo)
+      ? `<div class="grid2 stack">
+           <label class="field"><span>Desde el depósito</span><select id="fOrigen">${opciones(config.depositos, borrador.origen)}</select></label>
+           <label class="field"><span>Hacia el depósito</span><select id="fDestino">${opciones(config.depositos, borrador.destino)}</select></label>
+         </div>`
+      : `<label class="field"><span>Depósito</span><select id="fOrigen">${opciones(config.depositos, borrador.origen)}</select></label>`;
+    $('#fOrigen').onchange = e => borrador.origen = e.target.value;
+    if ($('#fDestino')) $('#fDestino').onchange = e => borrador.destino = e.target.value;
+  };
+  pintarDep();
+  $('#tipoSeg').onclick = e => {
+    const b = e.target.closest('button[data-tipo]'); if (!b) return;
+    borrador.tipo = b.dataset.tipo;
+    document.querySelectorAll('#tipoSeg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+    pintarDep();
+  };
+  $('#fPersona').onchange = e => borrador.persona = e.target.value;
+  $('#fRef').oninput = e => borrador.ref = e.target.value;
+  $('#btnEmpezar').onclick = () => {
+    const b = borrador;
+    if (!b.origen) return toast(esTraslado(b.tipo) ? 'Elegí el depósito de origen.' : 'Elegí el depósito.', 'err');
+    if (esTraslado(b.tipo) && !b.destino) return toast('Elegí el depósito de destino.', 'err');
+    if (esTraslado(b.tipo) && b.origen === b.destino) return toast('El depósito de origen y el de destino tienen que ser distintos.', 'err');
+    if (!b.persona) return toast('Elegí el responsable.', 'err');
+    const s = { id: genId(), tipo: b.tipo, origen: b.origen, destino: esTraslado(b.tipo) ? b.destino : '', persona: b.persona, ref: b.ref.trim(), inicio: new Date().toISOString(), fin: null, lines: [] };
+    sessions.unshift(s); activeId = s.id;
+    config.ultimo = { tipo: b.tipo, origen: b.origen, destino: b.destino, persona: b.persona };
+    saveConfig(); saveSessions(); store.set('active', activeId);
+    borrador = null; render();
+  };
+}
+
+/* ---------- Pantalla: escaneo ---------- */
+let escaner = null, escaneando = false, linterna = false, ultimaLectura = { texto: '', visto: 0 }, cantidadPendiente = 1, wakeLock = null, actx = null;
+
+function renderEscaneo(s) {
+  $('#main').innerHTML = `
+    <div class="sesion-head">
+      <div>
+        <div class="tipo">${TIPOS[s.tipo]}</div>
+        <div class="ruta">${rutaHTML(s)}</div>
+        <div class="meta">${esc(s.persona)}, desde las ${fmtHora(s.inicio)}${s.ref ? `, ref. ${esc(s.ref)}` : ''}</div>
+      </div>
+    </div>
+    <div class="cam" id="cam">
+      <div id="reader"></div>
+      <div class="cam-idle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8"/></svg><span>Encendé la cámara y apuntá al código de barras</span></div>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="btnCam">Encender cámara</button>
+      <button class="btn ghost" id="btnLinterna" hidden>Encender linterna</button>
+    </div>
+    <div id="ultimo" class="last empty"><div class="chip"></div><div class="info">Acá vas a ver el último artículo leído.</div></div>
+    <div class="qtyrow"><span>Cantidad por lectura</span>
+      <div class="stepper"><button id="qMenos" aria-label="Restar">−</button><output id="qVal" aria-live="polite">1</output><button id="qMas" aria-label="Sumar">+</button></div>
+    </div>
+    <div class="manual">
+      <input id="manual" placeholder="Código o descripción" autocomplete="off" enterkeyhint="done" aria-label="Escribir un código o buscar por descripción">
+      <button class="btn ghost" id="btnManual">Agregar</button>
+    </div>
+    <div id="sugs" class="sugs"></div>
+    <div class="totals" id="totales"></div>
+    <ul class="lines" id="lineas"></ul>
+    <button class="btn finish" id="btnFin">Finalizar lectura</button>`;
+
+  $('#btnCam').onclick = () => escaneando ? detenerCamara() : iniciarCamara();
+  $('#btnLinterna').onclick = alternarLinterna;
+  $('#qMenos').onclick = () => { cantidadPendiente = Math.max(1, cantidadPendiente - 1); $('#qVal').textContent = cantidadPendiente; };
+  $('#qMas').onclick = () => { cantidadPendiente++; $('#qVal').textContent = cantidadPendiente; };
+  $('#qVal').onclick = () => {
+    const v = pedirNumero('Cantidad que se suma en cada lectura', cantidadPendiente);
+    if (v && v > 0) { cantidadPendiente = v; $('#qVal').textContent = v; }
+  };
+  const inp = $('#manual');
+  inp.addEventListener('input', () => mostrarSugerencias(inp.value));
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); agregarManual(); } });
+  $('#btnManual').onclick = agregarManual;
+  $('#sugs').onclick = e => {
+    const b = e.target.closest('button[data-i]'); if (!b) return;
+    agregar(null, sugerencias[+b.dataset.i]); inp.value = ''; $('#sugs').innerHTML = '';
+  };
+  $('#lineas').onclick = e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    const ses = activeSession(); const l = ses && ses.lines.find(x => x.k === b.dataset.k); if (!l) return;
+    let nueva = l.q;
+    if (b.dataset.act === 'mas') nueva = l.q + 1;
+    if (b.dataset.act === 'menos') nueva = l.q - 1;
+    if (b.dataset.act === 'editar') { const v = pedirNumero(`Cantidad de ${l.d}`, l.q); if (v === null) return; nueva = v; }
+    if (nueva <= 0) {
+      if (!confirm(`¿Quitar ${l.d} de la lectura?`)) return;
+      ses.lines.splice(ses.lines.indexOf(l), 1);
+    } else l.q = nueva;
+    saveSessions(); pintarLineas();
+  };
+  $('#btnFin').onclick = finalizar;
+  cantidadPendiente = 1;
+  pintarLineas();
+  actualizarCamUI();
+}
+
+function pedirNumero(texto, actual) {
+  const r = prompt(texto, actual); if (r === null) return null;
+  const n = parseInt(String(r).replace(/\D/g, ''), 10);
+  if (isNaN(n) || n < 0) { toast('Escribí un número entero.', 'err'); return null; }
+  return n;
+}
+
+function pintarLineas() {
+  const s = activeSession(); if (!s) return;
+  const nc = noCatalogados(s);
+  $('#totales').innerHTML = `<span><b>${nf(s.lines.length)}</b>artículos</span><span><b>${nf(unidades(s))}</b>unidades</span>${nc ? `<span class="nc-t">${nc} sin catalogar</span>` : ''}`;
+  $('#lineas').innerHTML = s.lines.length ? s.lines.map(l => `
+    <li class="${l.nc ? 'nc' : ''}">
+      <div class="li-info"><div class="d">${esc(l.d)}</div><div class="c">${codigosTexto(l)}</div></div>
+      <div class="stepper sm">
+        <button data-act="menos" data-k="${esc(l.k)}" aria-label="Restar uno">−</button>
+        <button class="qbtn" data-act="editar" data-k="${esc(l.k)}" aria-label="Cambiar cantidad">${nf(l.q)}</button>
+        <button data-act="mas" data-k="${esc(l.k)}" aria-label="Sumar uno">+</button>
+      </div>
+    </li>`).join('') : `<li class="empty-list">Todavía no hay artículos en esta lectura.</li>`;
+}
+function codigosTexto(l) { return [l.c ? `Cód. ${esc(l.c)}` : '', l.b ? `Barras ${esc(l.b)}` : ''].filter(Boolean).join(', '); }
+
+function agregar(raw, itemElegido) {
+  const s = activeSession(); if (!s) return;
+  const codigo = String(raw ?? '').trim();
+  const it = itemElegido || buscarCodigo(codigo);
+  if (!it && !codigo) return;
+  const k = it ? 'A:' + normCode(it.c || it.b[0]) : 'N:' + normCode(codigo);
+  let l = s.lines.find(x => x.k === k);
+  if (!l) {
+    const barras = it ? (codigo && idxBarras.get(normCode(codigo)) === it ? codigo : (it.b[0] || '')) : codigo;
+    l = { k, c: it ? it.c : '', b: barras, d: it ? it.d : 'Artículo no catalogado', q: 0, nc: !it, t: new Date().toISOString() };
+  } else s.lines.splice(s.lines.indexOf(l), 1);
+  s.lines.unshift(l);
+  const cant = cantidadPendiente;
+  l.q += cant; l.u = new Date().toISOString();
+  saveSessions();
+  aviso(!!it);
+  mostrarUltimo(l, cant);
+  cantidadPendiente = 1; $('#qVal').textContent = 1;
+  pintarLineas();
+}
+
+function mostrarUltimo(l, cant) {
+  const el = $('#ultimo');
+  el.className = 'last' + (l.nc ? ' nc' : '');
+  el.innerHTML = `<div class="chip"></div>
+    <div class="info"><div class="d">${esc(l.d)}</div><div class="c">${codigosTexto(l)}</div>
+      ${l.nc ? `<div class="warn-t">No está en el catálogo. Se registra igual para revisarlo.</div>` : ''}</div>
+    <div class="q"><span class="plus">+${nf(cant)}</span><span class="tot">${nf(l.q)}</span></div>`;
+  void el.offsetWidth; el.classList.add('flash');
+}
+
+let sugerencias = [];
+function mostrarSugerencias(v) {
+  const caja = $('#sugs');
+  if (!catalog || v.trim().length < 3 || buscarCodigo(v)) { caja.innerHTML = ''; sugerencias = []; return; }
+  sugerencias = buscarTexto(v);
+  caja.innerHTML = sugerencias.map((it, i) => `<button type="button" data-i="${i}">${esc(it.d)}<small>${[it.c ? 'Cód. ' + esc(it.c) : '', it.b[0] ? 'Barras ' + esc(it.b[0]) : ''].filter(Boolean).join(', ')}</small></button>`).join('');
+}
+function agregarManual() {
+  const inp = $('#manual'); const v = inp.value.trim(); if (!v) return;
+  if (buscarCodigo(v)) { agregar(v); }
+  else if (sugerencias.length === 1) { agregar(null, sugerencias[0]); }
+  else if (/\s/.test(v)) { toast('No se encontró ese código. Elegí un artículo de la lista.', 'err'); return; }
+  else { agregar(v); }
+  inp.value = ''; $('#sugs').innerHTML = ''; sugerencias = [];
+}
+
+function aviso(ok) {
+  if (config.vibrar && navigator.vibrate) navigator.vibrate(ok ? 60 : [90, 60, 90]);
+  if (!config.sonido) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const tono = (f, t0, dur) => { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.value = f; g.gain.value = 0.06; o.connect(g); g.connect(actx.destination); o.start(actx.currentTime + t0); o.stop(actx.currentTime + t0 + dur); };
+    if (ok) tono(1760, 0, 0.08); else { tono(330, 0, 0.14); tono(330, 0.2, 0.14); }
+  } catch (e) { }
+}
+
+async function iniciarCamara() {
+  if (escaneando) return;
+  if (!window.isSecureContext) return toast('La cámara solo funciona si la app se abre desde una dirección https.', 'err');
+  try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch (e) { }
+  const L = window.__Html5QrcodeLibrary__; const F = L.Html5QrcodeSupportedFormats;
+  escaner = new L.Html5Qrcode('reader', {
+    verbose: false,
+    formatsToSupport: [F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.CODE_128, F.CODE_39, F.ITF, F.CODABAR, F.QR_CODE],
+    experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+  });
+  $('#btnCam').disabled = true;
+  try {
+    await escaner.start({ facingMode: 'environment' }, {
+      fps: 12,
+      qrbox: (w, h) => { const width = Math.max(60, Math.floor(w * 0.86)); return { width, height: Math.max(60, Math.floor(Math.min(h * 0.5, width * 0.45))) }; }
+    }, alLeer, () => { });
+    escaneando = true;
+    try { wakeLock = await navigator.wakeLock?.request('screen'); } catch (e) { }
+  } catch (err) {
+    escaner = null; escaneando = false;
+    const n = String(err && (err.name || err));
+    toast(/NotAllowed|Permission/i.test(n) ? 'No hay permiso para usar la cámara. Habilitalo en los ajustes del navegador para este sitio.' : 'No se pudo encender la cámara. Cerrá otras apps que la estén usando y probá de nuevo.', 'err');
+  }
+  if ($('#btnCam')) $('#btnCam').disabled = false;
+  actualizarCamUI();
+}
+async function detenerCamara() {
+  if (escaner && escaneando) { try { await escaner.stop(); escaner.clear(); } catch (e) { } }
+  escaner = null; escaneando = false; linterna = false;
+  try { await wakeLock?.release(); } catch (e) { } wakeLock = null;
+  actualizarCamUI();
+}
+function actualizarCamUI() {
+  const cam = $('#cam'); if (!cam) return;
+  cam.classList.toggle('on', escaneando);
+  $('#btnCam').textContent = escaneando ? 'Apagar cámara' : 'Encender cámara';
+  let hayLinterna = false;
+  try { hayLinterna = escaneando && !!escaner.getRunningTrackCapabilities().torch; } catch (e) { }
+  $('#btnLinterna').hidden = !hayLinterna;
+  $('#btnLinterna').textContent = linterna ? 'Apagar linterna' : 'Encender linterna';
+}
+async function alternarLinterna() {
+  try { await escaner.applyVideoConstraints({ advanced: [{ torch: !linterna }] }); linterna = !linterna; } catch (e) { toast('Este teléfono no permite usar la linterna desde el navegador.', 'err'); }
+  actualizarCamUI();
+}
+function alLeer(texto) {
+  const ahora = Date.now();
+  // El mismo código cuenta de nuevo solo si dejó de verse por más de 1,2 s (evita sumar de más al dejar el teléfono quieto)
+  if (texto === ultimaLectura.texto && ahora - ultimaLectura.visto < 1200) { ultimaLectura.visto = ahora; return; }
+  ultimaLectura = { texto, visto: ahora };
+  agregar(texto);
+}
+document.addEventListener('visibilitychange', () => { if (document.hidden && escaneando) detenerCamara(); });
+
+async function finalizar() {
+  const s = activeSession(); if (!s) return;
+  const msg = s.lines.length ? `¿Finalizar la lectura con ${nf(s.lines.length)} artículos y ${nf(unidades(s))} unidades?` : 'La lectura no tiene artículos. ¿Finalizarla igual?';
+  if (!confirm(msg)) return;
+  await detenerCamara();
+  s.fin = new Date().toISOString(); activeId = null;
+  saveSessions(); store.set('active', null);
+  toast('Lectura finalizada.');
+  ir('detalle', s.id);
+}
+
+/* ---------- Pantalla: historial ---------- */
+const filtros = { desde: '', hasta: '', tipo: '', dep: '', persona: '' };
+function filtradas() {
+  const d = filtros.desde ? new Date(filtros.desde).getTime() : -Infinity;
+  const h = filtros.hasta ? new Date(filtros.hasta).getTime() : Infinity;
+  return sessions.filter(s => {
+    const t = new Date(s.inicio).getTime();
+    return t >= d && t <= h && (!filtros.tipo || s.tipo === filtros.tipo) && (!filtros.dep || s.origen === filtros.dep || s.destino === filtros.dep) && (!filtros.persona || s.persona === filtros.persona);
+  });
+}
+function renderHistorial() {
+  const deps = [...new Set([...config.depositos, ...sessions.flatMap(s => [s.origen, s.destino]).filter(Boolean)])];
+  const pers = [...new Set([...config.personas, ...sessions.map(s => s.persona)])];
+  const hay = Object.values(filtros).some(Boolean);
+  const op = (lista, sel, todos) => `<option value="">${todos}</option>` + lista.map(x => `<option ${x === sel ? 'selected' : ''}>${esc(x)}</option>`).join('');
+  $('#main').innerHTML = `
+    <h1 class="h">Historial</h1>
+    <details class="filters" ${hay ? 'open' : ''}><summary>Filtrar por fecha, depósito o responsable</summary>
+      <div class="grid2 stack">
+        <label class="field"><span>Desde</span><input type="datetime-local" id="hDesde" value="${filtros.desde}"></label>
+        <label class="field"><span>Hasta</span><input type="datetime-local" id="hHasta" value="${filtros.hasta}"></label>
+      </div>
+      <label class="field"><span>Tipo de movimiento</span><select id="hTipo"><option value="">Todos</option>${Object.entries(TIPOS).map(([k, v]) => `<option value="${k}" ${filtros.tipo === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      <label class="field"><span>Depósito (origen o destino)</span><select id="hDep">${op(deps, filtros.dep, 'Todos')}</select></label>
+      <label class="field"><span>Responsable</span><select id="hPers">${op(pers, filtros.persona, 'Todos')}</select></label>
+      <button class="btn ghost" id="hLimpiar">Quitar filtros</button>
+    </details>
+    <div class="export-bar"><span id="hResumen"></span>
+      <div class="row"><button class="btn primary" id="hXls">Exportar Excel</button><button class="btn primary" id="hPdf">Exportar PDF</button></div>
+    </div>
+    <ul class="hist" id="hLista"></ul>`;
+  const bind = (id, k) => $(id).onchange = e => { filtros[k] = e.target.value; pintarHistorial(); };
+  bind('#hDesde', 'desde'); bind('#hHasta', 'hasta'); bind('#hTipo', 'tipo'); bind('#hDep', 'dep'); bind('#hPers', 'persona');
+  $('#hLimpiar').onclick = () => { Object.keys(filtros).forEach(k => filtros[k] = ''); renderHistorial(); };
+  $('#hXls').onclick = () => { const l = filtradas(); exportarExcel(l, `reporte_lecturas_${sello()}.xlsx`); };
+  $('#hPdf').onclick = () => { const l = filtradas(); exportarPDF(l, l.length === 1 ? nombreArchivo(l[0]) + '.pdf' : `reporte_lecturas_${sello()}.pdf`); };
+  $('#hLista').onclick = e => { const b = e.target.closest('[data-id]'); if (b) ir('detalle', b.dataset.id); };
+  pintarHistorial();
+}
+function pintarHistorial() {
+  const l = filtradas();
+  $('#hResumen').textContent = `${nf(l.length)} ${l.length === 1 ? 'lectura' : 'lecturas'}, ${nf(l.reduce((a, s) => a + unidades(s), 0))} unidades`;
+  $('#hXls').disabled = $('#hPdf').disabled = !l.length;
+  $('#hLista').innerHTML = l.length ? l.map(s => `
+    <li><button class="hist-item" data-id="${esc(s.id)}">
+      <span class="hi-top"><span>${TIPOS[s.tipo]}${s.fin ? '' : '<span class="badge">En curso</span>'}</span><span class="when">${fmtFH(s.inicio)}</span></span>
+      <span class="ruta">${rutaHTML(s)}</span>
+      <span class="hi-meta">${esc(s.persona)}, ${nf(s.lines.length)} artículos, ${nf(unidades(s))} unidades${noCatalogados(s) ? `, ${noCatalogados(s)} sin catalogar` : ''}${s.ref ? `, ref. ${esc(s.ref)}` : ''}</span>
+    </button></li>`).join('')
+    : `<li class="empty-list">${sessions.length ? 'Ninguna lectura coincide con los filtros.' : 'Las lecturas que finalices van a aparecer acá.'} ${sessions.length ? '' : '<button class="link" data-go="lectura">Empezar una lectura</button>'}</li>`;
+}
+
+/* ---------- Pantalla: detalle ---------- */
+const ordenar = s => [...s.lines].sort((a, b) => (a.nc - b.nc) || String(a.c || a.b).localeCompare(String(b.c || b.b), 'es', { numeric: true }));
+function nombreArchivo(s) { return `lectura_${TIPOS_CORTO[s.tipo]}_${slug(s.origen)}${s.destino ? '_a_' + slug(s.destino) : ''}_${sello(s.inicio)}`; }
+function renderDetalle() {
+  const s = sessions.find(x => x.id === detalleId); if (!s) return ir('historial');
+  const filas = ordenar(s);
+  $('#main').innerHTML = `
+    <button class="back" data-go="historial">Volver al historial</button>
+    <h1 class="h">${TIPOS[s.tipo]}</h1>
+    <div class="ruta" style="margin-bottom:12px">${rutaHTML(s)}</div>
+    <dl class="info">
+      <dt>Responsable</dt><dd>${esc(s.persona)}</dd>
+      <dt>Inicio</dt><dd>${fmtFH(s.inicio)}</dd>
+      <dt>Fin</dt><dd>${s.fin ? fmtFH(s.fin) : 'En curso'}</dd>
+      ${s.ref ? `<dt>Referencia</dt><dd>${esc(s.ref)}</dd>` : ''}
+      <dt>Identificador</dt><dd>${esc(s.id)}</dd>
+    </dl>
+    <div class="row"><button class="btn primary" id="dXls">Exportar Excel</button><button class="btn primary" id="dPdf">Exportar PDF</button></div>
+    <div class="totals"><span><b>${nf(s.lines.length)}</b>artículos</span><span><b>${nf(unidades(s))}</b>unidades</span>${noCatalogados(s) ? `<span class="nc-t">${noCatalogados(s)} sin catalogar</span>` : ''}</div>
+    <div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Código</th><th>Código de barras</th><th>Descripción</th><th class="n">Cant.</th></tr></thead>
+      <tbody>${filas.length ? filas.map(l => `<tr class="${l.nc ? 'nc' : ''}"><td>${esc(l.c || '-')}</td><td>${esc(l.b || '-')}</td><td>${esc(l.d)}</td><td class="n">${nf(l.q)}</td></tr>`).join('') : `<tr><td colspan="4" class="muted">Sin artículos.</td></tr>`}</tbody>
+    </table></div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn ghost" id="dSeguir">${s.fin ? 'Reabrir lectura' : 'Seguir escaneando'}</button>
+      <button class="btn danger" id="dBorrar">Eliminar lectura</button>
+    </div>`;
+  $('#dXls').onclick = () => exportarExcel([s], nombreArchivo(s) + '.xlsx');
+  $('#dPdf').onclick = () => exportarPDF([s], nombreArchivo(s) + '.pdf');
+  $('#dSeguir').onclick = () => {
+    const act = activeSession();
+    if (act && act.id !== s.id) return toast('Ya hay otra lectura en curso. Finalizala antes de reabrir esta.', 'err');
+    if (s.fin && !confirm('¿Reabrir esta lectura para seguir agregando artículos?')) return;
+    s.fin = null; activeId = s.id; saveSessions(); store.set('active', activeId); ir('lectura');
+  };
+  $('#dBorrar').onclick = () => {
+    if (!confirm(`¿Eliminar la lectura del ${fmtFH(s.inicio)} (${TIPOS[s.tipo]}, ${s.origen})? No se puede deshacer.`)) return;
+    sessions = sessions.filter(x => x.id !== s.id); if (activeId === s.id) { activeId = null; store.set('active', null); }
+    saveSessions(); toast('Lectura eliminada.'); ir('historial');
+  };
+}
+
+/* ---------- Exportar a Excel ---------- */
+function hoja(filas, anchos) { const ws = XLSX.utils.aoa_to_sheet(filas); ws['!cols'] = anchos.map(w => ({ wch: w })); return ws; }
+function exportarExcel(lista, nombre) {
+  if (!lista.length) return toast('No hay lecturas para exportar.', 'err');
+  try {
+    const wb = XLSX.utils.book_new();
+    const det = [['ID lectura', 'Fecha', 'Hora inicio', 'Hora fin', 'Tipo', 'Depósito origen', 'Depósito destino', 'Responsable', 'Referencia', 'Código', 'Código de barras', 'Descripción', 'Cantidad', 'Estado']];
+    for (const s of lista) for (const l of ordenar(s))
+      det.push([s.id, fmtFecha(s.inicio), fmtHora(s.inicio), s.fin ? fmtHora(s.fin) : '', TIPOS[s.tipo], s.origen, s.destino || '', s.persona, s.ref || '', String(l.c || ''), String(l.b || ''), l.d, l.q, l.nc ? 'No catalogado' : 'OK']);
+    XLSX.utils.book_append_sheet(wb, hoja(det, [20, 11, 10, 9, 20, 18, 18, 18, 16, 14, 16, 40, 9, 14]), 'Detalle');
+
+    const res = [['ID lectura', 'Tipo', 'Depósito origen', 'Depósito destino', 'Responsable', 'Referencia', 'Inicio', 'Fin', 'Estado', 'Artículos distintos', 'Unidades', 'No catalogados']];
+    for (const s of lista) res.push([s.id, TIPOS[s.tipo], s.origen, s.destino || '', s.persona, s.ref || '', fmtFH(s.inicio), s.fin ? fmtFH(s.fin) : '', s.fin ? 'Finalizada' : 'En curso', s.lines.length, unidades(s), noCatalogados(s)]);
+    XLSX.utils.book_append_sheet(wb, hoja(res, [20, 20, 18, 18, 18, 16, 16, 16, 11, 10, 10, 10]), 'Lecturas');
+
+    if (lista.length > 1) {
+      const agg = new Map();
+      for (const s of lista) for (const l of s.lines) {
+        const key = [s.tipo, s.origen, s.destino, l.k].join('|');
+        const a = agg.get(key) || { s, l, q: 0 }; a.q += l.q; agg.set(key, a);
+      }
+      const tot = [['Tipo', 'Depósito origen', 'Depósito destino', 'Código', 'Código de barras', 'Descripción', 'Cantidad total']];
+      [...agg.values()].sort((x, y) => (x.s.tipo + x.s.origen + (x.s.destino || '')).localeCompare(y.s.tipo + y.s.origen + (y.s.destino || '')) || String(x.l.c || x.l.b).localeCompare(String(y.l.c || y.l.b), 'es', { numeric: true }))
+        .forEach(a => tot.push([TIPOS[a.s.tipo], a.s.origen, a.s.destino || '', String(a.l.c || ''), String(a.l.b || ''), a.l.d, a.q]));
+      XLSX.utils.book_append_sheet(wb, hoja(tot, [20, 18, 18, 14, 16, 40, 12]), 'Totales por artículo');
+    }
+    XLSX.writeFile(wb, nombre);
+    toast('Excel generado.');
+  } catch (e) { console.error(e); toast('No se pudo generar el Excel.', 'err'); }
+}
+
+/* ---------- Exportar a PDF ---------- */
+const AZUL = [21, 70, 184];
+function encabezadoPDF(doc, titulo) {
+  const W = doc.internal.pageSize.getWidth();
+  doc.setFillColor(...AZUL); doc.rect(0, 0, W, 18, 'F');
+  doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.text('Pintolindo', 14, 12);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.text(titulo, W - 14, 12, { align: 'right' });
+  doc.setTextColor(25);
+}
+function lecturaPDF(doc, s) {
+  const W = doc.internal.pageSize.getWidth();
+  encabezadoPDF(doc, 'Comprobante de lectura');
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.text(TIPOS[s.tipo], 14, 30);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(110); doc.text('ID ' + s.id, 14, 35.5); doc.setTextColor(25);
+  const info = esTraslado(s.tipo) ? [['Desde el depósito', s.origen], ['Hacia el depósito', s.destino]] : [['Depósito', s.origen]];
+  info.push(['Responsable', s.persona], ['Inicio', fmtFH(s.inicio)], ['Fin', s.fin ? fmtFH(s.fin) : 'En curso']);
+  if (s.ref) info.push(['Referencia', s.ref]);
+  info.push(['Artículos distintos', nf(s.lines.length)], ['Unidades', nf(unidades(s))]);
+  if (noCatalogados(s)) info.push(['No catalogados', nf(noCatalogados(s))]);
+  doc.autoTable({ startY: 39, body: info, theme: 'plain', styles: { fontSize: 10, cellPadding: 1.1 }, columnStyles: { 0: { fontStyle: 'bold', cellWidth: 44 } }, margin: { left: 14, right: 14 } });
+  const filas = ordenar(s);
+  doc.autoTable({
+    startY: doc.lastAutoTable.finalY + 5,
+    head: [['#', 'Código', 'Código de barras', 'Descripción', 'Cant.']],
+    body: filas.length ? filas.map((l, i) => [i + 1, l.c || '-', l.b || '-', l.d + (l.nc && l.d !== 'Artículo no catalogado' ? ' (no catalogado)' : ''), nf(l.q)]) : [['', '', '', 'Sin artículos', '0']],
+    foot: [['', '', '', 'Total de unidades', nf(unidades(s))]],
+    styles: { fontSize: 9, cellPadding: 2, lineColor: [215, 220, 228], lineWidth: 0.1 },
+    headStyles: { fillColor: AZUL, textColor: 255 },
+    footStyles: { fillColor: [236, 240, 246], textColor: 25, fontStyle: 'bold' },
+    columnStyles: { 0: { cellWidth: 9, halign: 'right' }, 1: { cellWidth: 24 }, 2: { cellWidth: 33 }, 4: { cellWidth: 17, halign: 'right' } },
+    didParseCell: d => { if (d.section === 'body' && filas[d.row.index] && filas[d.row.index].nc) d.cell.styles.fillColor = [253, 232, 226]; if (d.section === 'foot' && d.column.index === 4) d.cell.styles.halign = 'right'; },
+    didDrawPage: () => encabezadoPDF(doc, 'Comprobante de lectura'),
+    margin: { top: 24, left: 14, right: 14, bottom: 18 }
+  });
+  let y = doc.lastAutoTable.finalY + 30;
+  if (y > 270) { doc.addPage(); encabezadoPDF(doc, 'Comprobante de lectura'); y = 50; }
+  doc.setDrawColor(90); doc.setFontSize(9); doc.setTextColor(80);
+  const firma = (x, texto) => { doc.line(x, y, x + 72, y); doc.text(texto, x, y + 5); };
+  if (esTraslado(s.tipo)) { firma(14, 'Entrega: firma y aclaración'); firma(W - 86, 'Recibe: firma y aclaración'); }
+  else firma(14, 'Responsable: firma y aclaración');
+  doc.setTextColor(25);
+}
+function exportarPDF(lista, nombre) {
+  if (!lista.length) return toast('No hay lecturas para exportar.', 'err');
+  try {
+    const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+    if (lista.length > 1) {
+      encabezadoPDF(doc, 'Reporte de lecturas');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.text('Resumen de lecturas', 14, 30);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+      const desc = [`${nf(lista.length)} lecturas, ${nf(lista.reduce((a, s) => a + unidades(s), 0))} unidades.`];
+      if (filtros.desde || filtros.hasta) desc.push(`Período: ${filtros.desde ? fmtFH(filtros.desde) : 'inicio'} a ${filtros.hasta ? fmtFH(filtros.hasta) : 'hoy'}.`);
+      if (filtros.dep) desc.push(`Depósito: ${filtros.dep}.`);
+      if (filtros.persona) desc.push(`Responsable: ${filtros.persona}.`);
+      if (filtros.tipo) desc.push(`Tipo: ${TIPOS[filtros.tipo]}.`);
+      doc.text(desc.join(' '), 14, 37, { maxWidth: W - 28 });
+      doc.autoTable({
+        startY: 46, head: [['Inicio', 'Tipo', 'Origen', 'Destino', 'Responsable', 'Art.', 'Unid.']],
+        body: lista.map(s => [fmtFH(s.inicio), TIPOS[s.tipo] + (s.fin ? '' : ' (en curso)'), s.origen, s.destino || '-', s.persona, nf(s.lines.length), nf(unidades(s))]),
+        styles: { fontSize: 8.5, cellPadding: 1.8 }, headStyles: { fillColor: AZUL }, columnStyles: { 5: { halign: 'right' }, 6: { halign: 'right' } },
+        didDrawPage: () => encabezadoPDF(doc, 'Reporte de lecturas'), margin: { top: 24, left: 14, right: 14, bottom: 18 }
+      });
+    }
+    lista.forEach((s, i) => { if (i > 0 || lista.length > 1) doc.addPage(); lecturaPDF(doc, s); });
+    const n = doc.getNumberOfPages(), gen = `Generado el ${fmtFH(new Date().toISOString())}`;
+    for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(120); doc.text(gen, 14, H - 8); doc.text(`Página ${i} de ${n}`, W - 14, H - 8, { align: 'right' }); }
+    doc.save(nombre);
+    toast('PDF generado.');
+  } catch (e) { console.error(e); toast('No se pudo generar el PDF.', 'err'); }
+}
+
+/* ---------- Pantalla: ajustes ---------- */
+let importacion = null; // { filas, encabezado, archivo }
+function renderAjustes() {
+  $('#main').innerHTML = `
+    <h1 class="h">Ajustes</h1>
+    <section class="block">
+      <h2 class="h2">Catálogo de artículos</h2>
+      ${catalog ? `<p>${nf(catalog.items.length)} artículos, importados el ${fmtFH(catalog.importado)} desde <b>${esc(catalog.archivo)}</b>.</p>` : `<p class="muted">Todavía no hay catálogo. Importalo desde un archivo CSV o Excel exportado del sistema de gestión.</p>`}
+      <div class="row">
+        <label class="btn primary" for="fCat">${catalog ? 'Reemplazar catálogo' : 'Importar catálogo'}</label>
+        <button class="btn ghost" id="btnPlantilla">Descargar plantilla</button>
+      </div>
+      <input type="file" id="fCat" class="hidden" accept=".csv,.txt,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel">
+      <div id="mapeo"></div>
+    </section>
+    <section class="block"><h2 class="h2">Depósitos</h2><div id="edDep"></div></section>
+    <section class="block"><h2 class="h2">Responsables</h2><div id="edPer"></div></section>
+    <section class="block">
+      <h2 class="h2">Avisos al escanear</h2>
+      <label class="check"><input type="checkbox" id="cSon" ${config.sonido ? 'checked' : ''}> Sonido</label>
+      <label class="check"><input type="checkbox" id="cVib" ${config.vibrar ? 'checked' : ''}> Vibración</label>
+    </section>
+    <section class="block">
+      <h2 class="h2">Copia de seguridad</h2>
+      <p class="muted small">Las lecturas se guardan solo en este teléfono. Descargá una copia de vez en cuando. La misma copia sirve para pasar el catálogo, los depósitos y los responsables a otro teléfono.</p>
+      <div class="row">
+        <button class="btn ghost" id="btnBackup">Descargar copia</button>
+        <label class="btn ghost" for="fRest">Restaurar copia</label>
+      </div>
+      <input type="file" id="fRest" class="hidden" accept=".json,application/json">
+    </section>
+    <p class="muted small">Versión ${APP_VERSION}</p>`;
+  editorLista('#edDep', 'depositos', 'Nombre del depósito');
+  editorLista('#edPer', 'personas', 'Nombre y apellido');
+  $('#cSon').onchange = e => { config.sonido = e.target.checked; saveConfig(); };
+  $('#cVib').onchange = e => { config.vibrar = e.target.checked; saveConfig(); };
+  $('#btnPlantilla').onclick = () => descargar(new Blob(['\uFEFFcodigo;codigo_barras;descripcion\r\nART-0001;7790000000017;Ejemplo látex interior blanco 20 L\r\nART-0002;7790000000024;Ejemplo esmalte sintético negro 1 L\r\n'], { type: 'text/csv;charset=utf-8' }), 'plantilla_catalogo.csv');
+  $('#fCat').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) leerCatalogo(f); };
+  $('#btnBackup').onclick = () => {
+    const data = { app: 'pintolindo-lecturas', version: 1, exportado: new Date().toISOString(), config, catalog, sessions };
+    descargar(new Blob([JSON.stringify(data)], { type: 'application/json' }), `copia_lecturas_${sello()}.json`);
+  };
+  $('#fRest').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (f) restaurar(f); };
+  if (importacion) pintarMapeo();
+}
+
+function editorLista(sel, clave, ph) {
+  const cont = $(sel);
+  const pintar = () => {
+    cont.innerHTML = `
+      <ul class="editable">${config[clave].map((x, i) => `<li>${clave === 'depositos' ? depChip(x) : esc(x)}<button data-i="${i}" aria-label="Quitar ${esc(x)}">Quitar</button></li>`).join('') || `<li class="muted">Todavía no hay ninguno.</li>`}</ul>
+      <div class="add-row"><input placeholder="${ph}" aria-label="${ph}"><button class="btn primary">Agregar</button></div>`;
+    const inp = $('input', cont);
+    const add = () => {
+      const v = inp.value.trim().replace(/\s+/g, ' '); if (!v) return;
+      if (config[clave].some(x => normText(x) === normText(v))) return toast('Ya está en la lista.', 'err');
+      config[clave].push(v); config[clave].sort((a, b) => a.localeCompare(b, 'es')); saveConfig(); pintar(); $('input', cont).focus();
+    };
+    $('.add-row button', cont).onclick = add;
+    inp.onkeydown = e => { if (e.key === 'Enter') add(); };
+    $('ul', cont).onclick = e => {
+      const b = e.target.closest('button[data-i]'); if (!b) return;
+      const x = config[clave][+b.dataset.i];
+      if (!confirm(`¿Quitar ${x} de la lista? Las lecturas ya hechas no cambian.`)) return;
+      config[clave].splice(+b.dataset.i, 1); saveConfig(); pintar();
+    };
+  };
+  pintar();
+}
+
+/* Lectura del archivo de catálogo */
+function parsearCSV(texto) {
+  texto = texto.replace(/^\uFEFF/, '');
+  const primera = texto.split(/\r?\n/)[0] || '';
+  let sep = ';', max = -1;
+  for (const c of [';', ',', '\t', '|']) { const n = primera.split(c).length; if (n > max) { max = n; sep = c; } }
+  const filas = []; let fila = [], campo = '', comillas = false;
+  for (let i = 0; i < texto.length; i++) {
+    const ch = texto[i];
+    if (comillas) { if (ch === '"') { if (texto[i + 1] === '"') { campo += '"'; i++; } else comillas = false; } else campo += ch; }
+    else if (ch === '"' && campo === '') comillas = true;
+    else if (ch === sep) { fila.push(campo); campo = ''; }
+    else if (ch === '\n') { fila.push(campo); filas.push(fila); fila = []; campo = ''; }
+    else if (ch !== '\r') campo += ch;
+  }
+  if (campo !== '' || fila.length) { fila.push(campo); filas.push(fila); }
+  return filas;
+}
+async function leerCatalogo(f) {
+  try {
+    const buf = await f.arrayBuffer(); let filas;
+    if (/\.(csv|txt)$/i.test(f.name)) {
+      let texto; try { texto = new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch (e) { texto = new TextDecoder('windows-1252').decode(buf); }
+      filas = parsearCSV(texto);
+    } else {
+      const wb = XLSX.read(buf, { type: 'array' });
+      filas = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+    }
+    filas = filas.map(r => r.map(v => typeof v === 'number' ? (Number.isInteger(v) ? v.toFixed(0) : String(v)) : String(v ?? '').trim())).filter(r => r.some(c => c !== ''));
+    if (filas.length < 2) return toast('El archivo no tiene filas para importar.', 'err');
+    // Busca la fila de encabezados entre las primeras 10
+    let h = 0;
+    for (let i = 0; i < Math.min(10, filas.length); i++) { const g = adivinar(filas[i]); if ((g.c >= 0 || g.b >= 0) && g.d >= 0) { h = i; break; } }
+    importacion = { archivo: f.name, encabezado: filas[h], filas: filas.slice(h + 1), mapa: adivinar(filas[h]) };
+    pintarMapeo();
+  } catch (e) { console.error(e); toast('No se pudo leer el archivo. Probá guardarlo como CSV o Excel (.xlsx).', 'err'); }
+}
+function adivinar(enc) {
+  const n = enc.map(x => normText(x).replace(/[^a-z0-9]/g, ''));
+  const b = n.findIndex(x => /barra|ean|gtin|upc/.test(x));
+  const c = n.findIndex((x, i) => i !== b && (/^(cod|codigo|codart|codigoarticulo|codarticulo|articulo|sku|codinterno|codigointerno|idarticulo|item|referencia)$/.test(x) || (x.startsWith('cod') && !/barra|ean/.test(x))));
+  const d = n.findIndex((x, i) => i !== b && i !== c && /desc|nombre|detalle|producto|articulo/.test(x));
+  return { c, b, d };
+}
+function separarBarras(v) { return String(v || '').split(/[,;|/\s]+/).map(x => x.trim()).filter(Boolean); }
+function armarItems() {
+  const { filas, mapa } = importacion; const porCodigo = new Map(), sueltos = [];
+  for (const r of filas) {
+    const c = mapa.c >= 0 ? String(r[mapa.c] || '').trim() : '';
+    const b = mapa.b >= 0 ? separarBarras(r[mapa.b]) : [];
+    const d = mapa.d >= 0 ? String(r[mapa.d] || '').trim() : '';
+    if (!c && !b.length) continue;
+    if (c && porCodigo.has(normCode(c))) { const it = porCodigo.get(normCode(c)); b.forEach(x => { if (!it.b.includes(x)) it.b.push(x); }); continue; }
+    const it = { c, b, d: d || c || b[0] };
+    c ? porCodigo.set(normCode(c), it) : sueltos.push(it);
+  }
+  const items = [...porCodigo.values(), ...sueltos];
+  const vistos = new Map(); let repetidos = 0;
+  for (const it of items) for (const x of it.b) { const k = normCode(x); if (vistos.has(k) && vistos.get(k) !== it) repetidos++; else vistos.set(k, it); }
+  return { items, sinBarras: items.filter(it => !it.b.length).length, repetidos };
+}
+function pintarMapeo() {
+  const imp = importacion; const cont = $('#mapeo'); if (!cont) return;
+  const sel = (id, k, txt) => `<label class="field"><span>${txt}</span><select id="${id}"><option value="-1">No usar</option>${imp.encabezado.map((h, i) => `<option value="${i}" ${imp.mapa[k] === i ? 'selected' : ''}>${esc(h || 'Columna ' + (i + 1))}</option>`).join('')}</select></label>`;
+  const r = armarItems();
+  cont.innerHTML = `
+    <div class="note warn" style="margin-top:14px">Revisá qué columna corresponde a cada dato de <b>${esc(imp.archivo)}</b>. No importes columnas de precios ni costos.</div>
+    ${sel('mC', 'c', 'Código interno del artículo')}
+    ${sel('mB', 'b', 'Código de barras')}
+    ${sel('mD', 'd', 'Descripción')}
+    <div class="tbl-wrap map-preview"><table class="tbl"><thead><tr><th>Código</th><th>Código de barras</th><th>Descripción</th></tr></thead>
+      <tbody>${r.items.slice(0, 5).map(it => `<tr><td>${esc(it.c || '-')}</td><td>${esc(it.b.join(', ') || '-')}</td><td>${esc(it.d)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No hay filas válidas con esta selección.</td></tr>'}</tbody></table></div>
+    <p class="small">${nf(r.items.length)} artículos para importar.${r.sinBarras ? ` ${nf(r.sinBarras)} no tienen código de barras: se podrán agregar buscándolos por descripción.` : ''}${r.repetidos ? ` Hay ${nf(r.repetidos)} códigos de barras repetidos en más de un artículo: se usará el primero.` : ''}</p>
+    <div class="row"><button class="btn primary" id="mOk" ${r.items.length ? '' : 'disabled'}>Importar ${nf(r.items.length)} artículos</button><button class="btn ghost" id="mNo">Cancelar</button></div>`;
+  const cambio = (id, k) => $(id).onchange = e => { imp.mapa[k] = +e.target.value; pintarMapeo(); };
+  cambio('#mC', 'c'); cambio('#mB', 'b'); cambio('#mD', 'd');
+  $('#mNo').onclick = () => { importacion = null; cont.innerHTML = ''; };
+  $('#mOk').onclick = () => {
+    if (imp.mapa.d < 0) return toast('Elegí la columna de descripción.', 'err');
+    const nuevo = { archivo: imp.archivo, importado: new Date().toISOString(), items: armarItems().items };
+    if (!store.set('catalog', nuevo)) return;
+    catalog = nuevo; indexar(); importacion = null;
+    toast(`Catálogo importado: ${nf(catalog.items.length)} artículos.`); renderAjustes();
+  };
+}
+
+async function restaurar(f) {
+  try {
+    const data = JSON.parse(await f.text());
+    if (data.app !== 'pintolindo-lecturas') return toast('Ese archivo no es una copia de esta app.', 'err');
+    if (!confirm('Se van a reemplazar el catálogo, los depósitos y los responsables por los de la copia, y se van a sumar las lecturas que no estén en este teléfono. ¿Continuar?')) return;
+    if (data.config) { config = Object.assign(config, { depositos: data.config.depositos || [], personas: data.config.personas || [] }); saveConfig(); }
+    if (data.catalog) { catalog = data.catalog; store.set('catalog', catalog); indexar(); }
+    const ids = new Set(sessions.map(s => s.id)); let n = 0;
+    for (const s of data.sessions || []) if (!ids.has(s.id)) { sessions.push(s); n++; }
+    sessions.sort((a, b) => b.inicio.localeCompare(a.inicio)); saveSessions();
+    toast(`Copia restaurada. Se sumaron ${nf(n)} lecturas.`); renderAjustes();
+  } catch (e) { console.error(e); toast('No se pudo leer la copia.', 'err'); }
+}
+
+/* ---------- Inicio ---------- */
+render();
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
+</script>
+</body>
+</html>
