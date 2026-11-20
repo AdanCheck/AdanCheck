@@ -188,12 +188,50 @@ input[type=file].hidden{position:absolute;width:1px;height:1px;opacity:0;pointer
   background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:var(--radius);max-width:min(92vw,520px);font-weight:500;z-index:20;transition:opacity .2s,transform .2s}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 #toast.err{background:var(--err);color:#fff}
+
+/* Agregados de la versión conectada */
+.sync{font-size:13px;font-weight:600;padding:3px 10px;border-radius:12px;background:var(--accent);color:#1A1400;white-space:nowrap;cursor:pointer;border:0}
+.sync.off{background:#fff;color:var(--err)}
+.top-right{display:flex;align-items:center;gap:10px}
+.screen-name{white-space:nowrap}
+.sync:not([hidden]) + .screen-name{display:none}
+.login{max-width:420px;margin:24px auto 0}
+.login .h{font-size:34px}
+.pin input{letter-spacing:.3em;font-size:22px}
+.user-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.user-row .who{min-width:0}
+.user-row .who small{display:block;color:var(--muted)}
+.user-row.inactivo .who{opacity:.55}
+.user-acts{display:flex;gap:6px;flex-wrap:wrap}
+.user-acts .btn{min-height:40px;padding:6px 12px;font-size:14px}
+.chip-rol{display:inline-block;font-size:12px;font-weight:600;padding:1px 8px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line);margin-left:6px}
+.badge.pend{background:var(--err);color:#fff}
+.field .static{min-height:50px;display:flex;align-items:center;padding:10px 12px;border:1px dashed var(--line);border-radius:var(--radius);color:var(--muted)}
+body.sin-sesion nav.tabs{display:none}
+.sal-list{display:flex;flex-direction:column;gap:6px;margin:6px 0 4px}
+.sal-item{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface-2);cursor:pointer}
+.sal-item input{width:22px;height:22px;margin-top:2px;flex-shrink:0}
+.sal-item small{display:block;color:var(--muted)}
+.sal-item.on{border-color:var(--brand);box-shadow:inset 0 0 0 1px var(--brand)}
+.badge.ok{background:var(--ok);color:#fff}
+.badge.gris{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.cmp-res{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.cmp-res div{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:10px}
+.cmp-res b{display:block;font-family:"Barlow Condensed","Arial Narrow",sans-serif;font-size:28px;line-height:1.1}
+.cmp-res .mal b{color:var(--err)}
+.tbl tr.falt td{background:var(--err-soft)}
+.tbl tr.sobr td{background:var(--warn-soft)}
+.tbl td.dif{font-weight:700}
+.estado-t{font-weight:600}
+.verdict{border-radius:var(--radius);padding:12px 14px;margin:10px 0;font-weight:600}
+.verdict.ok{background:color-mix(in srgb,var(--ok) 15%,transparent);border-left:6px solid var(--ok)}
+.verdict.mal{background:var(--err-soft);border-left:6px solid var(--err)}
 </style>
 </head>
 <body>
 <header class="top">
   <span class="wordmark">Pintolindo</span>
-  <span class="screen-name" id="screenName">Lectura</span>
+  <span class="top-right"><button class="sync" id="sync" hidden></button><span class="screen-name" id="screenName"></span></span>
 </header>
 <main id="main"></main>
 
@@ -219,12 +257,11 @@ input[type=file].hidden{position:absolute;width:1px;height:1px;opacity:0;pointer
 <script src="jspdf.plugin.autotable.min.js"></script>
 <script>
 'use strict';
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '2.1.0';
 
 /* ---------- Utilidades ---------- */
 const $ = (s, el = document) => el.querySelector(s);
 const TIPOS = { salida: 'Salida por traslado', recepcion: 'Recepción de traslado', inventario: 'Inventario' };
-const TIPOS_CORTO = { salida: 'salida', recepcion: 'recepcion', inventario: 'inventario' };
 const esTraslado = t => t === 'salida' || t === 'recepcion';
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtFecha = iso => iso ? new Date(iso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
@@ -238,7 +275,7 @@ function sello(iso) { const d = iso ? new Date(iso) : new Date(); return `${d.ge
 const normText = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const slug = s => normText(s).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'x';
 function normCode(s) { s = String(s ?? '').trim().toUpperCase(); if (/^\d+$/.test(s)) s = s.replace(/^0+(?=\d)/, ''); return s; }
-function genId() { const d = new Date(); return `L${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}-${Math.random().toString(36).slice(2, 5).toUpperCase()}`; }
+function genId() { const d = new Date(); return `L${d.getFullYear()}${pad2(d.getMonth() + 1)}${pad2(d.getDate())}-${pad2(d.getHours())}${pad2(d.getMinutes())}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`; }
 
 let toastTimer;
 function toast(msg, tipo) {
@@ -251,21 +288,88 @@ function descargar(blob, nombre) {
   setTimeout(() => URL.revokeObjectURL(url), 4000);
 }
 
-/* ---------- Almacenamiento local ---------- */
+/* ---------- Almacenamiento en el teléfono ---------- */
 const store = {
-  get(k, def) { try { const v = localStorage.getItem('pl_' + k); return v ? JSON.parse(v) : def; } catch (e) { return def; } },
+  get(k, def) { try { const v = localStorage.getItem('pl2_' + k); return v ? JSON.parse(v) : def; } catch (e) { return def; } },
   set(k, v) {
-    try { localStorage.setItem('pl_' + k, JSON.stringify(v)); return true; }
-    catch (e) { toast('No hay espacio para guardar en este teléfono. Exportá y eliminá lecturas viejas.', 'err'); return false; }
+    try { localStorage.setItem('pl2_' + k, JSON.stringify(v)); return true; }
+    catch (e) { toast('No hay espacio para guardar en este teléfono.', 'err'); return false; }
   }
 };
-let config = Object.assign({ depositos: [], personas: [], sonido: true, vibrar: true, ultimo: {} }, store.get('config', {}));
-let catalog = store.get('catalog', null);   // { archivo, importado, items: [{ c, b: [], d }] }
-let sessions = store.get('sessions', []);
+let sesion = store.get('auth', null);               // { token, usuario: { id, nombre, rol } }
+let prefs = Object.assign({ sonido: true, vibrar: true, ultimo: {}, ultimoNombre: '' }, store.get('prefs', {}));
+let depositos = store.get('depositos', []);         // [{ id, nombre }]
+let personas = store.get('personas', []);
+let catalog = store.get('catalog', null);           // { version, archivo, importado, importadoPor, items }
+let locales = store.get('locales', []);             // lecturas en curso o pendientes de subir
 let activeId = store.get('active', null);
-const saveConfig = () => store.set('config', config);
-const saveSessions = () => store.set('sessions', sessions);
-const activeSession = () => sessions.find(s => s.id === activeId && !s.fin) || null;
+const savePrefs = () => store.set('prefs', prefs);
+const guardarLocales = () => store.set('locales', locales);
+const esAdmin = () => sesion?.usuario?.rol === 'admin';
+const nombresDep = () => depositos.map(d => d.nombre);
+const activeSession = () => locales.find(s => s.id === activeId && !s.fin) || null;
+const pendiente = s => (s._rev || 0) > (s._sync || 0);
+const pendientes = () => locales.filter(pendiente);
+const limpiaLectura = s => ({ id: s.id, tipo: s.tipo, origen: s.origen, destino: s.destino || '', persona: s.persona, ref: s.ref || '', inicio: s.inicio, fin: s.fin, lines: s.lines, salidas: s.salidas || [], actualizado: s.actualizado });
+
+/* ---------- Comunicación con el servidor ---------- */
+let enLinea = navigator.onLine;
+async function api(metodo, url, cuerpo) {
+  let r;
+  try {
+    r = await fetch(url, { method: metodo, headers: { 'Content-Type': 'application/json', ...(sesion ? { Authorization: 'Bearer ' + sesion.token } : {}) }, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+  } catch (e) { enLinea = false; pintarSync(); throw Object.assign(new Error('Sin conexión con el servidor.'), { offline: true }); }
+  enLinea = true;
+  const data = await r.json().catch(() => ({}));
+  if (r.status === 401 && sesion && url !== '/api/login') { vencida(data.error); throw Object.assign(new Error(data.error || 'Sesión vencida'), { status: 401 }); }
+  if (!r.ok) throw Object.assign(new Error(data.error || 'Error del servidor.'), { status: r.status });
+  return data;
+}
+function vencida(msg) {
+  sesion = null; store.set('auth', null);
+  toast(msg || 'Tu sesión venció. Volvé a ingresar.', 'err');
+  render();
+}
+
+async function cargarDatos() {
+  try {
+    const d = await api('GET', '/api/datos?cv=' + encodeURIComponent(catalog?.version ?? ''));
+    sesion.usuario = d.usuario; store.set('auth', sesion);
+    depositos = d.depositos; store.set('depositos', depositos);
+    personas = d.personas; store.set('personas', personas);
+    if (!d.catalogo) { catalog = null; store.set('catalog', null); indexar(); }
+    else if (!d.catalogo.sinCambios) { catalog = d.catalogo; store.set('catalog', catalog); indexar(); }
+    if (vista === 'ajustes' || (vista === 'lectura' && !activeSession())) render();
+  } catch (e) { }
+}
+
+/* Sincronización de lecturas: se guardan en el teléfono y se suben cuando hay conexión */
+let sincronizando = false, timerSync = null;
+function marcarCambio(s) { s._rev = (s._rev || 0) + 1; s.actualizado = new Date().toISOString(); guardarLocales(); pintarSync(); clearTimeout(timerSync); timerSync = setTimeout(sincronizar, 1500); }
+async function sincronizar() {
+  if (sincronizando || !sesion) return;
+  sincronizando = true;
+  try {
+    for (const s of locales.filter(pendiente)) {
+      const rev = s._rev;
+      try { await api('PUT', '/api/lecturas/' + encodeURIComponent(s.id), limpiaLectura(s)); s._sync = rev; }
+      catch (e) { if (e.offline || e.status === 401) break; if (e.status === 403) { s._sync = rev; toast(e.message, 'err'); } }
+    }
+    locales = locales.filter(s => !s.fin || pendiente(s));
+    guardarLocales();
+  } finally { sincronizando = false; pintarSync(); }
+}
+function pintarSync() {
+  const b = $('#sync'); if (!b) return;
+  const n = pendientes().length;
+  b.hidden = !sesion || (n === 0 && enLinea);
+  b.className = 'sync' + (enLinea ? '' : ' off');
+  b.textContent = !enLinea ? (n ? `Sin conexión: ${n} por subir` : 'Sin conexión') : `Subiendo ${n}`;
+}
+$('#sync').onclick = () => { sincronizar(); cargarDatos(); };
+window.addEventListener('online', () => { enLinea = true; sincronizar(); cargarDatos(); });
+window.addEventListener('offline', () => { enLinea = false; pintarSync(); });
+setInterval(() => { if (sesion && pendientes().length) sincronizar(); }, 30000);
 
 /* ---------- Catálogo e índices ---------- */
 const idxBarras = new Map(), idxCodigo = new Map(); let busqueda = [];
@@ -274,7 +378,7 @@ function indexar() {
   if (!catalog) return;
   for (const it of catalog.items) {
     if (it.c) idxCodigo.set(normCode(it.c), it);
-    for (const b of it.b) idxBarras.set(normCode(b), it);
+    for (const b of it.b) if (!idxBarras.has(normCode(b))) idxBarras.set(normCode(b), it);
     busqueda.push({ it, s: normText(`${it.d} ${it.c} ${it.b.join(' ')}`) });
   }
 }
@@ -289,7 +393,7 @@ indexar();
 
 /* ---------- Depósitos con color de muestra ---------- */
 const PALETA = ['#C8361D', '#1546B8', '#157F4F', '#E0A400', '#7A3FB0', '#0E8A8A', '#D9632B', '#5A6B1F'];
-function depColor(n) { const i = config.depositos.indexOf(n); if (i >= 0) return PALETA[i % PALETA.length]; let h = 0; for (const ch of String(n)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return PALETA[h % PALETA.length]; }
+function depColor(n) { const i = nombresDep().indexOf(n); if (i >= 0) return PALETA[i % PALETA.length]; let h = 0; for (const ch of String(n)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return PALETA[h % PALETA.length]; }
 const depChip = n => `<span class="dep"><i style="background:${depColor(n)}"></i>${esc(n)}</span>`;
 function rutaHTML(s) { return esTraslado(s.tipo) ? `${depChip(s.origen)}<span class="arrow" aria-label="hacia">→</span>${depChip(s.destino)}` : depChip(s.origen); }
 
@@ -301,6 +405,9 @@ async function ir(v, id) {
   vista = v; detalleId = id ?? null; render(); window.scrollTo(0, 0);
 }
 function render() {
+  document.body.classList.toggle('sin-sesion', !sesion);
+  pintarSync();
+  if (!sesion) { detenerCamara(); $('#screenName').textContent = 'Ingresar'; return renderLogin(); }
   $('#screenName').textContent = TITULOS[vista];
   const tab = vista === 'detalle' ? 'historial' : vista;
   document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.tab === tab ? 'page' : 'false'));
@@ -309,9 +416,38 @@ function render() {
 $('#tabs').addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (b) ir(b.dataset.tab); });
 $('#main').addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) ir(g.dataset.go, g.dataset.id); });
 
+/* ---------- Ingreso ---------- */
+function renderLogin() {
+  $('#main').innerHTML = `
+    <section class="login">
+      <h1 class="h">Ingresar</h1>
+      <p class="muted">Usá tu nombre y el PIN que te dio el administrador.</p>
+      <div class="block">
+        <label class="field"><span>Nombre</span><input id="lNombre" autocomplete="username" value="${esc(prefs.ultimoNombre)}"></label>
+        <label class="field pin"><span>PIN</span><input id="lPin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8"></label>
+        <button class="btn primary big" id="lOk">Ingresar</button>
+      </div>
+    </section>`;
+  const ok = async () => {
+    const nombre = $('#lNombre').value.trim(), pin = $('#lPin').value.trim();
+    if (!nombre || !pin) return toast('Completá el nombre y el PIN.', 'err');
+    $('#lOk').disabled = true;
+    try {
+      const r = await api('POST', '/api/login', { nombre, pin });
+      sesion = r; store.set('auth', sesion);
+      prefs.ultimoNombre = nombre; savePrefs();
+      vista = 'lectura'; render(); cargarDatos(); sincronizar();
+    } catch (e) { toast(e.offline ? 'No hay conexión. Para ingresar la primera vez necesitás internet.' : e.message, 'err'); }
+    if ($('#lOk')) $('#lOk').disabled = false;
+  };
+  $('#lOk').onclick = ok;
+  $('#lPin').onkeydown = e => { if (e.key === 'Enter') ok(); };
+  (prefs.ultimoNombre ? $('#lPin') : $('#lNombre')).focus();
+}
+
 function estadoCatalogo() {
-  if (!catalog) return `<div class="note warn">Todavía no hay catálogo cargado, así que todo lo que se escanee quedará como no catalogado. <button class="link" data-go="ajustes">Importar catálogo</button></div>`;
-  return `<p class="muted small">Catálogo: ${nf(catalog.items.length)} artículos, importado el ${fmtFH(catalog.importado)}.</p>`;
+  if (!catalog) return `<div class="note warn">Todavía no hay catálogo cargado, así que todo lo que se escanee quedará como no catalogado. ${esAdmin() ? '<button class="link" data-go="ajustes">Importar catálogo</button>' : 'Pedile al administrador que lo importe.'}</div>`;
+  return `<p class="muted small">Catálogo: ${nf(catalog.items.length)} artículos, actualizado el ${fmtFH(catalog.importado)}.</p>`;
 }
 const opciones = (lista, sel) => `<option value="">Elegí una opción</option>` + lista.map(x => `<option ${x === sel ? 'selected' : ''}>${esc(x)}</option>`).join('');
 
@@ -320,30 +456,41 @@ let borrador = null;
 function renderLectura() { const s = activeSession(); s ? renderEscaneo(s) : renderNueva(); }
 
 function renderNueva() {
-  borrador = borrador || { tipo: config.ultimo.tipo || 'salida', origen: config.ultimo.origen || '', destino: config.ultimo.destino || '', persona: config.ultimo.persona || '', ref: '' };
-  const falta = !config.depositos.length || !config.personas.length;
+  const u = prefs.ultimo;
+  borrador = borrador || { tipo: u.tipo || 'salida', origen: u.origen || '', destino: u.destino || '', ref: '', salidas: [] };
+  const deps = nombresDep();
   $('#main').innerHTML = `
     <h1 class="h">Nueva lectura</h1>
     ${estadoCatalogo()}
-    ${falta ? `<div class="note warn">Antes de empezar, cargá los depósitos y los responsables. <button class="link" data-go="ajustes">Ir a Ajustes</button></div>` : ''}
+    ${!deps.length ? `<div class="note warn">Todavía no hay depósitos cargados. ${esAdmin() ? '<button class="link" data-go="ajustes">Cargarlos en Ajustes</button>' : 'Pedile al administrador que los cargue.'}</div>` : ''}
     <section class="block">
       <fieldset class="seg"><legend>Tipo de movimiento</legend>
         <div class="seg-btns" id="tipoSeg">${Object.entries(TIPOS).map(([k, v]) => `<button type="button" data-tipo="${k}" aria-pressed="${k === borrador.tipo}">${v}</button>`).join('')}</div>
       </fieldset>
       <div id="depCampos"></div>
-      <label class="field"><span>Responsable</span><select id="fPersona">${opciones(config.personas, borrador.persona)}</select></label>
+      <div class="field"><span>Responsable</span><div class="static">${esc(sesion.usuario.nombre)}</div></div>
       <label class="field"><span>Referencia (opcional)</span><input id="fRef" placeholder="Número de remito o de movimiento" value="${esc(borrador.ref)}" autocomplete="off"></label>
       <button class="btn primary big" id="btnEmpezar">Empezar lectura</button>
     </section>`;
   const pintarDep = () => {
     $('#depCampos').innerHTML = esTraslado(borrador.tipo)
       ? `<div class="grid2 stack">
-           <label class="field"><span>Desde el depósito</span><select id="fOrigen">${opciones(config.depositos, borrador.origen)}</select></label>
-           <label class="field"><span>Hacia el depósito</span><select id="fDestino">${opciones(config.depositos, borrador.destino)}</select></label>
+           <label class="field"><span>Desde el depósito</span><select id="fOrigen">${opciones(deps, borrador.origen)}</select></label>
+           <label class="field"><span>Hacia el depósito</span><select id="fDestino">${opciones(deps, borrador.destino)}</select></label>
          </div>`
-      : `<label class="field"><span>Depósito</span><select id="fOrigen">${opciones(config.depositos, borrador.origen)}</select></label>`;
+      : `<label class="field"><span>Depósito</span><select id="fOrigen">${opciones(deps, borrador.origen)}</select></label>`;
+    if (borrador.tipo === 'recepcion') $('#depCampos').insertAdjacentHTML('beforeend', `<div class="field"><span>Salidas que llegan en este viaje</span><div id="salSel"></div></div>`);
     $('#fOrigen').onchange = e => borrador.origen = e.target.value;
-    if ($('#fDestino')) $('#fDestino').onchange = e => borrador.destino = e.target.value;
+    if ($('#fDestino')) $('#fDestino').onchange = e => { borrador.destino = e.target.value; borrador.salidas = []; cargarSel(); };
+    cargarSel();
+  };
+  const cargarSel = () => {
+    if (borrador.tipo !== 'recepcion' || !$('#salSel')) return;
+    panelSalidas($('#salSel'), borrador.destino, borrador.salidas, null, (ids, objs) => {
+      borrador.salidas = ids;
+      const origenes = [...new Set(objs.map(o => o.origen))];
+      if (origenes.length && !origenes.includes(borrador.origen)) { borrador.origen = origenes[0]; $('#fOrigen').value = borrador.origen; }
+    });
   };
   pintarDep();
   $('#tipoSeg').onclick = e => {
@@ -352,20 +499,42 @@ function renderNueva() {
     document.querySelectorAll('#tipoSeg button').forEach(x => x.setAttribute('aria-pressed', x === b));
     pintarDep();
   };
-  $('#fPersona').onchange = e => borrador.persona = e.target.value;
   $('#fRef').oninput = e => borrador.ref = e.target.value;
   $('#btnEmpezar').onclick = () => {
     const b = borrador;
-    if (!b.origen) return toast(esTraslado(b.tipo) ? 'Elegí el depósito de origen.' : 'Elegí el depósito.', 'err');
-    if (esTraslado(b.tipo) && !b.destino) return toast('Elegí el depósito de destino.', 'err');
+    if (!deps.includes(b.origen)) return toast(esTraslado(b.tipo) ? 'Elegí el depósito de origen.' : 'Elegí el depósito.', 'err');
+    if (esTraslado(b.tipo) && !deps.includes(b.destino)) return toast('Elegí el depósito de destino.', 'err');
     if (esTraslado(b.tipo) && b.origen === b.destino) return toast('El depósito de origen y el de destino tienen que ser distintos.', 'err');
-    if (!b.persona) return toast('Elegí el responsable.', 'err');
-    const s = { id: genId(), tipo: b.tipo, origen: b.origen, destino: esTraslado(b.tipo) ? b.destino : '', persona: b.persona, ref: b.ref.trim(), inicio: new Date().toISOString(), fin: null, lines: [] };
-    sessions.unshift(s); activeId = s.id;
-    config.ultimo = { tipo: b.tipo, origen: b.origen, destino: b.destino, persona: b.persona };
-    saveConfig(); saveSessions(); store.set('active', activeId);
+    const s = { id: genId(), tipo: b.tipo, origen: b.origen, destino: esTraslado(b.tipo) ? b.destino : '', persona: sesion.usuario.nombre, ref: b.ref.trim(), inicio: new Date().toISOString(), fin: null, lines: [], salidas: b.tipo === 'recepcion' ? b.salidas : [] };
+    locales.unshift(s); activeId = s.id; store.set('active', activeId);
+    prefs.ultimo = { tipo: b.tipo, origen: b.origen, destino: b.destino }; savePrefs();
+    marcarCambio(s);
     borrador = null; render();
   };
+}
+
+/* Lista de salidas pendientes de recepción para elegir (una o varias) */
+async function panelSalidas(cont, destino, seleccion, recepcionId, alCambiar) {
+  if (!destino) { cont.innerHTML = '<p class="muted small">Elegí primero el depósito de destino.</p>'; return; }
+  cont.innerHTML = '<p class="muted small">Buscando salidas hacia este depósito…</p>';
+  let lista;
+  try { lista = await api('GET', `/api/salidas-pendientes?destino=${encodeURIComponent(destino)}${recepcionId ? '&recepcion=' + encodeURIComponent(recepcionId) : ''}`); }
+  catch (e) { cont.innerHTML = '<p class="muted small">Sin conexión: podés empezar igual y vincular las salidas más tarde, desde la pantalla de lectura.</p>'; return; }
+  if (!cont.isConnected) return;
+  const sel = new Set(seleccion);
+  const pintar = () => {
+    cont.innerHTML = lista.length ? `<div class="sal-list">${lista.map(x => `
+      <label class="sal-item ${sel.has(x.id) ? 'on' : ''}"><input type="checkbox" value="${esc(x.id)}" ${sel.has(x.id) ? 'checked' : ''}>
+        <span><b>${esc(x.origen)}</b>, ${fmtFH(x.inicio)}<small>${esc(x.persona)}, ${nf(x.articulos)} artículos, ${nf(x.unidades)} unidades${x.ref ? `, ref. ${esc(x.ref)}` : ''}</small></span>
+      </label>`).join('')}</div>
+      <p class="muted small">${sel.size ? `${sel.size} ${sel.size === 1 ? 'salida elegida' : 'salidas elegidas'}. Al finalizar, la app compara lo que llegó con lo que salió.` : 'Marcá las salidas que llegan en este viaje. Si no elegís ninguna, la recepción no se compara.'}</p>`
+      : '<p class="muted small">No hay salidas pendientes de recepción hacia este depósito. Podés hacer la recepción igual, sin comparar.</p>';
+    cont.querySelectorAll('input').forEach(i => i.onchange = () => {
+      i.checked ? sel.add(i.value) : sel.delete(i.value);
+      alCambiar([...sel], lista.filter(x => sel.has(x.id))); pintar();
+    });
+  };
+  pintar();
 }
 
 /* ---------- Pantalla: escaneo ---------- */
@@ -378,6 +547,7 @@ function renderEscaneo(s) {
         <div class="tipo">${TIPOS[s.tipo]}</div>
         <div class="ruta">${rutaHTML(s)}</div>
         <div class="meta">${esc(s.persona)}, desde las ${fmtHora(s.inicio)}${s.ref ? `, ref. ${esc(s.ref)}` : ''}</div>
+        ${s.tipo === 'recepcion' ? `<div class="meta">${(s.salidas || []).length ? `Vinculada a ${s.salidas.length} ${s.salidas.length === 1 ? 'salida' : 'salidas'}.` : 'Sin salidas vinculadas.'} <button class="link" id="btnSal">${(s.salidas || []).length ? 'Cambiar' : 'Vincular salidas'}</button></div><div id="salEdit"></div>` : ''}
       </div>
     </div>
     <div class="cam" id="cam">
@@ -428,9 +598,10 @@ function renderEscaneo(s) {
       if (!confirm(`¿Quitar ${l.d} de la lectura?`)) return;
       ses.lines.splice(ses.lines.indexOf(l), 1);
     } else l.q = nueva;
-    saveSessions(); pintarLineas();
+    marcarCambio(ses); pintarLineas();
   };
   $('#btnFin').onclick = finalizar;
+  if ($('#btnSal')) $('#btnSal').onclick = () => panelSalidas($('#salEdit'), s.destino, s.salidas || [], s.id, ids => { s.salidas = ids; marcarCambio(s); });
   cantidadPendiente = 1;
   pintarLineas();
   actualizarCamUI();
@@ -473,7 +644,7 @@ function agregar(raw, itemElegido) {
   s.lines.unshift(l);
   const cant = cantidadPendiente;
   l.q += cant; l.u = new Date().toISOString();
-  saveSessions();
+  marcarCambio(s);
   aviso(!!it);
   mostrarUltimo(l, cant);
   cantidadPendiente = 1; $('#qVal').textContent = 1;
@@ -507,8 +678,8 @@ function agregarManual() {
 }
 
 function aviso(ok) {
-  if (config.vibrar && navigator.vibrate) navigator.vibrate(ok ? 60 : [90, 60, 90]);
-  if (!config.sonido) return;
+  if (prefs.vibrar && navigator.vibrate) navigator.vibrate(ok ? 60 : [90, 60, 90]);
+  if (!prefs.sonido) return;
   try {
     actx = actx || new (window.AudioContext || window.webkitAudioContext)();
     const tono = (f, t0, dur) => { const o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.value = f; g.gain.value = 0.06; o.connect(g); g.connect(actx.destination); o.start(actx.currentTime + t0); o.stop(actx.currentTime + t0 + dur); };
@@ -563,39 +734,68 @@ async function alternarLinterna() {
 }
 function alLeer(texto) {
   const ahora = Date.now();
-  // El mismo código cuenta de nuevo solo si dejó de verse por más de 1,2 s (evita sumar de más al dejar el teléfono quieto)
+  // El mismo código cuenta de nuevo solo si dejó de verse por más de 1,2 s
   if (texto === ultimaLectura.texto && ahora - ultimaLectura.visto < 1200) { ultimaLectura.visto = ahora; return; }
   ultimaLectura = { texto, visto: ahora };
   agregar(texto);
 }
-document.addEventListener('visibilitychange', () => { if (document.hidden && escaneando) detenerCamara(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && escaneando) detenerCamara();
+  if (!document.hidden && sesion) { sincronizar(); cargarDatos(); }
+});
 
 async function finalizar() {
   const s = activeSession(); if (!s) return;
   const msg = s.lines.length ? `¿Finalizar la lectura con ${nf(s.lines.length)} artículos y ${nf(unidades(s))} unidades?` : 'La lectura no tiene artículos. ¿Finalizarla igual?';
   if (!confirm(msg)) return;
   await detenerCamara();
-  s.fin = new Date().toISOString(); activeId = null;
-  saveSessions(); store.set('active', null);
-  toast('Lectura finalizada.');
+  s.fin = new Date().toISOString(); activeId = null; store.set('active', null);
+  marcarCambio(s);
+  await sincronizar();
+  toast(pendiente(s) ? 'Lectura finalizada. Se va a subir cuando haya conexión.' : 'Lectura finalizada y guardada.');
+  ultimasVistas = ultimasVistas.filter(x => x.id !== s.id);
+  if (pendiente(s)) ultimasVistas.unshift(s);
   ir('detalle', s.id);
 }
 
 /* ---------- Pantalla: historial ---------- */
-const filtros = { desde: '', hasta: '', tipo: '', dep: '', persona: '' };
-function filtradas() {
-  const d = filtros.desde ? new Date(filtros.desde).getTime() : -Infinity;
-  const h = filtros.hasta ? new Date(filtros.hasta).getTime() : Infinity;
-  return sessions.filter(s => {
-    const t = new Date(s.inicio).getTime();
-    return t >= d && t <= h && (!filtros.tipo || s.tipo === filtros.tipo) && (!filtros.dep || s.origen === filtros.dep || s.destino === filtros.dep) && (!filtros.persona || s.persona === filtros.persona);
-  });
+const filtros = { desde: '', hasta: '', tipo: '', dep: '', persona: '', estado: '' };
+function estadoTraslado(s) {
+  if (s.tipo === 'salida') {
+    if (!s.fin || s.recepcion === undefined) return null;
+    if (!s.recepcion) return 'pendiente';
+    if (!s.recepcion.fin) return 'enrecepcion';
+    return s.recepcion.diferencias ? 'diferencias' : 'ok';
+  }
+  if (s.tipo === 'recepcion' && s.control && s.control.salidas) {
+    if (!s.fin) return 'enrecepcion';
+    return s.control.diferencias ? 'diferencias' : 'ok';
+  }
+  return null;
+}
+function badgeTraslado(s) {
+  const e = estadoTraslado(s);
+  if (e === 'pendiente') return '<span class="badge">Pendiente de recepción</span>';
+  if (e === 'enrecepcion') return '<span class="badge gris">En recepción</span>';
+  if (e === 'diferencias') return `<span class="badge pend">${s.tipo === 'salida' ? 'Recibida con diferencias' : `${s.control.diferencias} con diferencias`}</span>`;
+  if (e === 'ok') return `<span class="badge ok">${s.tipo === 'salida' ? 'Recibida OK' : 'Sin diferencias'}</span>`;
+  return '';
+}
+let ultimasVistas = [];   // última lista traída del servidor
+function filtraLocal(s) {
+  const t = new Date(s.inicio).getTime();
+  return (!filtros.desde || t >= new Date(filtros.desde).getTime()) && (!filtros.hasta || t <= new Date(filtros.hasta).getTime())
+    && (!filtros.tipo || s.tipo === filtros.tipo) && (!filtros.dep || s.origen === filtros.dep || s.destino === filtros.dep) && (!filtros.persona || s.persona === filtros.persona);
+}
+function listaHistorial() {
+  const mapa = new Map(ultimasVistas.map(s => [s.id, s]));
+  for (const s of locales) if (filtraLocal(s)) mapa.set(s.id, s);
+  return [...mapa.values()].filter(s => !filtros.estado || estadoTraslado(s) === filtros.estado || (filtros.estado === 'diferencias' && estadoTraslado(s) === 'diferencias'))
+    .sort((a, b) => String(b.inicio).localeCompare(String(a.inicio)));
 }
 function renderHistorial() {
-  const deps = [...new Set([...config.depositos, ...sessions.flatMap(s => [s.origen, s.destino]).filter(Boolean)])];
-  const pers = [...new Set([...config.personas, ...sessions.map(s => s.persona)])];
-  const hay = Object.values(filtros).some(Boolean);
   const op = (lista, sel, todos) => `<option value="">${todos}</option>` + lista.map(x => `<option ${x === sel ? 'selected' : ''}>${esc(x)}</option>`).join('');
+  const hay = Object.values(filtros).some(Boolean);
   $('#main').innerHTML = `
     <h1 class="h">Historial</h1>
     <details class="filters" ${hay ? 'open' : ''}><summary>Filtrar por fecha, depósito o responsable</summary>
@@ -604,45 +804,87 @@ function renderHistorial() {
         <label class="field"><span>Hasta</span><input type="datetime-local" id="hHasta" value="${filtros.hasta}"></label>
       </div>
       <label class="field"><span>Tipo de movimiento</span><select id="hTipo"><option value="">Todos</option>${Object.entries(TIPOS).map(([k, v]) => `<option value="${k}" ${filtros.tipo === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
-      <label class="field"><span>Depósito (origen o destino)</span><select id="hDep">${op(deps, filtros.dep, 'Todos')}</select></label>
-      <label class="field"><span>Responsable</span><select id="hPers">${op(pers, filtros.persona, 'Todos')}</select></label>
+      <label class="field"><span>Depósito (origen o destino)</span><select id="hDep">${op(nombresDep(), filtros.dep, 'Todos')}</select></label>
+      <label class="field"><span>Responsable</span><select id="hPers">${op(personas, filtros.persona, 'Todos')}</select></label>
+      <label class="field"><span>Estado del traslado</span><select id="hEst">
+        <option value="">Todos</option>
+        <option value="pendiente" ${filtros.estado === 'pendiente' ? 'selected' : ''}>Salidas pendientes de recepción</option>
+        <option value="diferencias" ${filtros.estado === 'diferencias' ? 'selected' : ''}>Con diferencias</option>
+        <option value="ok" ${filtros.estado === 'ok' ? 'selected' : ''}>Recibidos sin diferencias</option>
+      </select></label>
       <button class="btn ghost" id="hLimpiar">Quitar filtros</button>
     </details>
-    <div class="export-bar"><span id="hResumen"></span>
+    <div id="hAviso"></div>
+    <div class="export-bar"><span id="hResumen">Cargando…</span>
       <div class="row"><button class="btn primary" id="hXls">Exportar Excel</button><button class="btn primary" id="hPdf">Exportar PDF</button></div>
     </div>
     <ul class="hist" id="hLista"></ul>`;
-  const bind = (id, k) => $(id).onchange = e => { filtros[k] = e.target.value; pintarHistorial(); };
-  bind('#hDesde', 'desde'); bind('#hHasta', 'hasta'); bind('#hTipo', 'tipo'); bind('#hDep', 'dep'); bind('#hPers', 'persona');
+  const bind = (id, k) => $(id).onchange = e => { filtros[k] = e.target.value; traerHistorial(); };
+  bind('#hDesde', 'desde'); bind('#hHasta', 'hasta'); bind('#hTipo', 'tipo'); bind('#hDep', 'dep'); bind('#hPers', 'persona'); $('#hEst').onchange = e => { filtros.estado = e.target.value; pintarHistorial(); };
   $('#hLimpiar').onclick = () => { Object.keys(filtros).forEach(k => filtros[k] = ''); renderHistorial(); };
-  $('#hXls').onclick = () => { const l = filtradas(); exportarExcel(l, `reporte_lecturas_${sello()}.xlsx`); };
-  $('#hPdf').onclick = () => { const l = filtradas(); exportarPDF(l, l.length === 1 ? nombreArchivo(l[0]) + '.pdf' : `reporte_lecturas_${sello()}.pdf`); };
+  $('#hXls').onclick = () => exportarExcel(listaHistorial(), `reporte_lecturas_${sello()}.xlsx`);
+  $('#hPdf').onclick = () => { const l = listaHistorial(); exportarPDF(l, l.length === 1 ? nombreArchivo(l[0]) + '.pdf' : `reporte_lecturas_${sello()}.pdf`); };
   $('#hLista').onclick = e => { const b = e.target.closest('[data-id]'); if (b) ir('detalle', b.dataset.id); };
+  pintarHistorial();
+  traerHistorial();
+}
+let pedidoHist = 0;
+async function traerHistorial() {
+  const n = ++pedidoHist;
+  const q = new URLSearchParams();
+  if (filtros.desde) q.set('desde', new Date(filtros.desde).toISOString());
+  if (filtros.hasta) q.set('hasta', new Date(filtros.hasta).toISOString());
+  if (filtros.tipo) q.set('tipo', filtros.tipo);
+  if (filtros.dep) q.set('deposito', filtros.dep);
+  if (filtros.persona) q.set('persona', filtros.persona);
+  try {
+    const l = await api('GET', '/api/lecturas?' + q);
+    if (n !== pedidoHist || vista !== 'historial') return;
+    ultimasVistas = l; $('#hAviso').innerHTML = '';
+  } catch (e) {
+    if (n !== pedidoHist || vista !== 'historial') return;
+    ultimasVistas = ultimasVistas.filter(filtraLocal);
+    $('#hAviso').innerHTML = `<div class="note err">No hay conexión con el servidor. Se muestran las lecturas que ya estaban en este teléfono.</div>`;
+  }
   pintarHistorial();
 }
 function pintarHistorial() {
-  const l = filtradas();
+  if (!$('#hLista')) return;
+  const l = listaHistorial();
   $('#hResumen').textContent = `${nf(l.length)} ${l.length === 1 ? 'lectura' : 'lecturas'}, ${nf(l.reduce((a, s) => a + unidades(s), 0))} unidades`;
   $('#hXls').disabled = $('#hPdf').disabled = !l.length;
   $('#hLista').innerHTML = l.length ? l.map(s => `
     <li><button class="hist-item" data-id="${esc(s.id)}">
-      <span class="hi-top"><span>${TIPOS[s.tipo]}${s.fin ? '' : '<span class="badge">En curso</span>'}</span><span class="when">${fmtFH(s.inicio)}</span></span>
+      <span class="hi-top"><span>${TIPOS[s.tipo]}${s.fin ? '' : '<span class="badge">En curso</span>'}${badgeTraslado(s)}${locales.includes(s) && pendiente(s) ? '<span class="badge pend">Sin subir</span>' : ''}</span><span class="when">${fmtFH(s.inicio)}</span></span>
       <span class="ruta">${rutaHTML(s)}</span>
       <span class="hi-meta">${esc(s.persona)}, ${nf(s.lines.length)} artículos, ${nf(unidades(s))} unidades${noCatalogados(s) ? `, ${noCatalogados(s)} sin catalogar` : ''}${s.ref ? `, ref. ${esc(s.ref)}` : ''}</span>
     </button></li>`).join('')
-    : `<li class="empty-list">${sessions.length ? 'Ninguna lectura coincide con los filtros.' : 'Las lecturas que finalices van a aparecer acá.'} ${sessions.length ? '' : '<button class="link" data-go="lectura">Empezar una lectura</button>'}</li>`;
+    : `<li class="empty-list">${Object.values(filtros).some(Boolean) ? 'Ninguna lectura coincide con los filtros.' : 'Las lecturas que se finalicen van a aparecer acá.'}</li>`;
 }
 
 /* ---------- Pantalla: detalle ---------- */
 const ordenar = s => [...s.lines].sort((a, b) => (a.nc - b.nc) || String(a.c || a.b).localeCompare(String(b.c || b.b), 'es', { numeric: true }));
-function nombreArchivo(s) { return `lectura_${TIPOS_CORTO[s.tipo]}_${slug(s.origen)}${s.destino ? '_a_' + slug(s.destino) : ''}_${sello(s.inicio)}`; }
+function nombreArchivo(s) { return `lectura_${s.tipo}_${slug(s.origen)}${s.destino ? '_a_' + slug(s.destino) : ''}_${sello(s.inicio)}`; }
+const buscarLectura = id => locales.find(x => x.id === id) || ultimasVistas.find(x => x.id === id);
+const puedeEditar = s => esAdmin() || s.persona === sesion.usuario.nombre;
 function renderDetalle() {
-  const s = sessions.find(x => x.id === detalleId); if (!s) return ir('historial');
+  const s = buscarLectura(detalleId);
+  if (!s) {
+    $('#main').innerHTML = '<button class="back" data-go="historial">Volver al historial</button><p class="muted">Cargando lectura…</p>';
+    const id = detalleId;
+    api('GET', '/api/lecturas?ids=' + encodeURIComponent(id)).then(l => {
+      if (vista !== 'detalle' || detalleId !== id) return;
+      if (!l.length) { toast('No se encontró la lectura.', 'err'); return ir('historial'); }
+      ultimasVistas = [...ultimasVistas.filter(x => x.id !== id), l[0]]; renderDetalle();
+    }).catch(() => { toast('Sin conexión: no se pudo abrir la lectura.', 'err'); ir('historial'); });
+    return;
+  }
   const filas = ordenar(s);
   $('#main').innerHTML = `
     <button class="back" data-go="historial">Volver al historial</button>
     <h1 class="h">${TIPOS[s.tipo]}</h1>
     <div class="ruta" style="margin-bottom:12px">${rutaHTML(s)}</div>
+    ${locales.includes(s) && pendiente(s) ? '<div class="note warn">Esta lectura todavía no se subió al servidor. Se sube sola cuando haya conexión.</div>' : ''}
     <dl class="info">
       <dt>Responsable</dt><dd>${esc(s.persona)}</dd>
       <dt>Inicio</dt><dd>${fmtFH(s.inicio)}</dd>
@@ -651,28 +893,151 @@ function renderDetalle() {
       <dt>Identificador</dt><dd>${esc(s.id)}</dd>
     </dl>
     <div class="row"><button class="btn primary" id="dXls">Exportar Excel</button><button class="btn primary" id="dPdf">Exportar PDF</button></div>
+    ${bloqueTraslado(s)}
     <div class="totals"><span><b>${nf(s.lines.length)}</b>artículos</span><span><b>${nf(unidades(s))}</b>unidades</span>${noCatalogados(s) ? `<span class="nc-t">${noCatalogados(s)} sin catalogar</span>` : ''}</div>
     <div class="tbl-wrap"><table class="tbl">
       <thead><tr><th>Código</th><th>Código de barras</th><th>Descripción</th><th class="n">Cant.</th></tr></thead>
       <tbody>${filas.length ? filas.map(l => `<tr class="${l.nc ? 'nc' : ''}"><td>${esc(l.c || '-')}</td><td>${esc(l.b || '-')}</td><td>${esc(l.d)}</td><td class="n">${nf(l.q)}</td></tr>`).join('') : `<tr><td colspan="4" class="muted">Sin artículos.</td></tr>`}</tbody>
     </table></div>
-    <div class="row" style="margin-top:16px">
+    ${puedeEditar(s) ? `<div class="row" style="margin-top:16px">
       <button class="btn ghost" id="dSeguir">${s.fin ? 'Reabrir lectura' : 'Seguir escaneando'}</button>
       <button class="btn danger" id="dBorrar">Eliminar lectura</button>
-    </div>`;
+    </div>` : ''}`;
   $('#dXls').onclick = () => exportarExcel([s], nombreArchivo(s) + '.xlsx');
   $('#dPdf').onclick = () => exportarPDF([s], nombreArchivo(s) + '.pdf');
+  if (s.tipo === 'recepcion' && (s.salidas || []).length) cargarControl(s);
+  if ($('#dVincular')) $('#dVincular').onclick = () => panelSalidas($('#dSalEdit'), s.destino, s.salidas || [], s.id, async ids => {
+    let loc = locales.find(x => x.id === s.id);
+    if (!loc) { loc = JSON.parse(JSON.stringify(limpiaLectura(s))); locales.unshift(loc); }
+    loc.salidas = ids; s.salidas = ids; marcarCambio(loc);
+    clearTimeout(timerSync); await sincronizar();
+    ultimasVistas = ultimasVistas.filter(x => x.id !== s.id); renderDetalle();
+  });
+  if (!puedeEditar(s)) return;
   $('#dSeguir').onclick = () => {
     const act = activeSession();
-    if (act && act.id !== s.id) return toast('Ya hay otra lectura en curso. Finalizala antes de reabrir esta.', 'err');
+    if (act && act.id !== s.id) return toast('Ya hay otra lectura en curso en este teléfono. Finalizala antes.', 'err');
+    if (!s.fin && !locales.includes(s)) return toast('Esta lectura está en curso en otro teléfono.', 'err');
     if (s.fin && !confirm('¿Reabrir esta lectura para seguir agregando artículos?')) return;
-    s.fin = null; activeId = s.id; saveSessions(); store.set('active', activeId); ir('lectura');
+    let loc = locales.find(x => x.id === s.id);
+    if (!loc) { loc = JSON.parse(JSON.stringify(s)); locales.unshift(loc); }
+    loc.fin = null; activeId = loc.id; store.set('active', activeId); marcarCambio(loc); ir('lectura');
   };
-  $('#dBorrar').onclick = () => {
-    if (!confirm(`¿Eliminar la lectura del ${fmtFH(s.inicio)} (${TIPOS[s.tipo]}, ${s.origen})? No se puede deshacer.`)) return;
-    sessions = sessions.filter(x => x.id !== s.id); if (activeId === s.id) { activeId = null; store.set('active', null); }
-    saveSessions(); toast('Lectura eliminada.'); ir('historial');
+  $('#dBorrar').onclick = async () => {
+    if (!confirm(`¿Eliminar la lectura del ${fmtFH(s.inicio)} (${TIPOS[s.tipo]}, ${s.origen})? Se borra para todos y no se puede deshacer.`)) return;
+    try { await api('DELETE', '/api/lecturas/' + encodeURIComponent(s.id)); }
+    catch (e) { return toast(e.offline ? 'Para eliminar una lectura necesitás conexión.' : e.message, 'err'); }
+    locales = locales.filter(x => x.id !== s.id); guardarLocales();
+    ultimasVistas = ultimasVistas.filter(x => x.id !== s.id);
+    if (activeId === s.id) { activeId = null; store.set('active', null); }
+    toast('Lectura eliminada.'); ir('historial');
   };
+}
+
+/* ---------- Control de recepción ---------- */
+const ESTADOS = { faltante: 'Faltante', sobrante: 'Sobrante', noenviado: 'No enviado', ok: 'OK' };
+function bloqueTraslado(s) {
+  if (s.tipo === 'salida' && s.fin && s.recepcion !== undefined) {
+    if (!s.recepcion) return '<div class="verdict mal" style="background:var(--warn-soft);border-color:var(--accent)">Pendiente de recepción. Todavía nadie registró la llegada de esta mercadería.</div>';
+    const r = s.recepcion;
+    return `<div class="verdict ${r.fin && !r.diferencias ? 'ok' : 'mal'}">${!r.fin ? `Se está recibiendo (${esc(r.persona)}).` : r.diferencias ? `Recibida con ${r.diferencias} ${r.diferencias === 1 ? 'artículo' : 'artículos'} con diferencias.` : 'Recibida sin diferencias.'}
+      <br><button class="link" data-go="detalle" data-id="${esc(r.id)}">Ver el control de recepción</button></div>`;
+  }
+  if (s.tipo === 'recepcion') {
+    const n = (s.salidas || []).length, editable = puedeEditar(s);
+    if (!n) return `<div class="block"><h2 class="h2">Control contra lo enviado</h2><p class="muted">Esta recepción no está vinculada a ninguna salida, así que no se puede comparar.</p>
+      ${editable ? '<button class="btn ghost" id="dVincular">Vincular salidas</button><div id="dSalEdit"></div>' : ''}</div>`;
+    return `<div class="block"><h2 class="h2">Control contra lo enviado</h2><div id="cmp"><p class="muted">Comparando con ${n} ${n === 1 ? 'salida' : 'salidas'}…</p></div>
+      ${editable ? '<button class="link" id="dVincular">Cambiar salidas vinculadas</button><div id="dSalEdit"></div>' : ''}</div>`;
+  }
+  return '';
+}
+function compararLecturas(rec, salidas) {
+  const env = new Map(), recb = new Map(), meta = new Map();
+  for (const s of salidas) for (const l of s.lines) { env.set(l.k, (env.get(l.k) || 0) + l.q); if (!meta.has(l.k)) meta.set(l.k, l); }
+  for (const l of rec.lines) { recb.set(l.k, (recb.get(l.k) || 0) + l.q); if (!meta.has(l.k)) meta.set(l.k, l); }
+  const orden = { faltante: 0, sobrante: 1, noenviado: 2, ok: 3 };
+  return [...new Set([...env.keys(), ...recb.keys()])].map(k => {
+    const e = env.get(k) || 0, r = recb.get(k) || 0, m = meta.get(k);
+    return { k, c: m.c, b: m.b, d: m.d, enviado: e, recibido: r, dif: r - e, estado: e === r ? 'ok' : e === 0 ? 'noenviado' : r < e ? 'faltante' : 'sobrante' };
+  }).sort((a, b) => orden[a.estado] - orden[b.estado] || String(a.c || a.b).localeCompare(String(b.c || b.b), 'es', { numeric: true }));
+}
+async function cargarControl(rec) {
+  const cont = $('#cmp'); let salidas;
+  try { salidas = await api('GET', '/api/lecturas?ids=' + rec.salidas.map(encodeURIComponent).join(',')); }
+  catch (e) { if ($('#cmp')) $('#cmp').innerHTML = '<p class="muted">Sin conexión: no se puede comparar ahora.</p>'; return; }
+  if (!cont.isConnected) return;
+  const filas = compararLecturas(rec, salidas);
+  const env = filas.reduce((a, f) => a + f.enviado, 0), recb = filas.reduce((a, f) => a + f.recibido, 0);
+  const malas = filas.filter(f => f.estado !== 'ok');
+  cont.innerHTML = `
+    ${rec.fin ? `<div class="verdict ${malas.length ? 'mal' : 'ok'}">${malas.length ? `Hay ${malas.length} ${malas.length === 1 ? 'artículo' : 'artículos'} con diferencias.` : 'Todo lo enviado llegó completo.'}</div>` : '<div class="note warn">La recepción sigue en curso: la comparación puede cambiar.</div>'}
+    <div class="cmp-res"><div>Enviado<b>${nf(env)}</b></div><div>Recibido<b>${nf(recb)}</b></div><div class="${malas.length ? 'mal' : ''}">Con diferencias<b>${nf(malas.length)}</b></div></div>
+    <p class="small">Salidas vinculadas: ${salidas.map(x => `<button class="link" data-go="detalle" data-id="${esc(x.id)}">${esc(x.origen)}, ${fmtFH(x.inicio)}</button>`).join(', ')}</p>
+    <div class="row" style="margin-bottom:10px"><button class="btn primary" id="cXls">Excel del control</button><button class="btn primary" id="cPdf">PDF del control</button></div>
+    <div class="tbl-wrap"><table class="tbl">
+      <thead><tr><th>Artículo</th><th class="n">Enviado</th><th class="n">Recibido</th><th class="n">Dif.</th><th>Estado</th></tr></thead>
+      <tbody>${filas.map(f => `<tr class="${f.estado === 'faltante' ? 'falt' : f.estado === 'ok' ? '' : 'sobr'}"><td>${esc(f.d)}<br><span class="muted small">${codigosTexto(f)}</span></td><td class="n">${nf(f.enviado)}</td><td class="n">${nf(f.recibido)}</td><td class="n dif">${f.dif > 0 ? '+' : ''}${nf(f.dif)}</td><td class="estado-t">${ESTADOS[f.estado]}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Sin artículos.</td></tr>'}</tbody>
+    </table></div>`;
+  const base = `control_recepcion_${slug(rec.destino)}_${sello(rec.inicio)}`;
+  $('#cXls').onclick = () => exportarControlExcel(rec, salidas, filas, base + '.xlsx');
+  $('#cPdf').onclick = () => exportarControlPDF(rec, salidas, filas, base + '.pdf');
+}
+function exportarControlExcel(rec, salidas, filas, nombre) {
+  try {
+    const wb = XLSX.utils.book_new();
+    const c = [['Código', 'Código de barras', 'Descripción', 'Enviado', 'Recibido', 'Diferencia', 'Estado']];
+    filas.forEach(f => c.push([String(f.c || ''), String(f.b || ''), f.d, f.enviado, f.recibido, f.dif, ESTADOS[f.estado]]));
+    XLSX.utils.book_append_sheet(wb, hoja(c, [14, 16, 42, 10, 10, 11, 12]), 'Control');
+    const sl = [['ID salida', 'Depósito origen', 'Depósito destino', 'Fecha', 'Responsable', 'Referencia', 'Unidades']];
+    salidas.forEach(x => sl.push([x.id, x.origen, x.destino, fmtFH(x.inicio), x.persona, x.ref || '', unidades(x)]));
+    sl.push([]); sl.push(['ID recepción', 'Recibió en', '', 'Fecha', 'Responsable', 'Referencia', 'Unidades']);
+    sl.push([rec.id, rec.destino, '', fmtFH(rec.inicio), rec.persona, rec.ref || '', unidades(rec)]);
+    XLSX.utils.book_append_sheet(wb, hoja(sl, [22, 18, 18, 16, 18, 16, 10]), 'Lecturas');
+    XLSX.writeFile(wb, nombre); toast('Excel generado.');
+  } catch (e) { console.error(e); toast('No se pudo generar el Excel.', 'err'); }
+}
+function exportarControlPDF(rec, salidas, filas, nombre) {
+  try {
+    const { jsPDF } = window.jspdf; const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight();
+    const malas = filas.filter(f => f.estado !== 'ok').length;
+    encabezadoPDF(doc, 'Control de recepción');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.text('Control de recepción', 14, 30);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+    doc.text(`Recibido en ${rec.destino} por ${rec.persona}, ${fmtFH(rec.inicio)}${rec.fin ? ' a ' + fmtHora(rec.fin) : ' (en curso)'}.`, 14, 37);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...(malas ? [194, 52, 27] : [21, 127, 79]));
+    doc.text(malas ? `Resultado: ${malas} ${malas === 1 ? 'artículo' : 'artículos'} con diferencias.` : 'Resultado: todo lo enviado llegó completo.', 14, 43);
+    doc.setTextColor(25); doc.setFont('helvetica', 'normal');
+    doc.autoTable({ startY: 48, head: [['Salidas vinculadas', 'Fecha', 'Responsable', 'Referencia', 'Unid.']],
+      body: salidas.map(x => [`${x.origen} (${x.id})`, fmtFH(x.inicio), x.persona, x.ref || '-', nf(unidades(x))]),
+      styles: { fontSize: 8.5, cellPadding: 1.6 }, headStyles: { fillColor: AZUL }, columnStyles: { 4: { halign: 'right' } }, margin: { left: 14, right: 14 } });
+    const env = filas.reduce((a, f) => a + f.enviado, 0), rcb = filas.reduce((a, f) => a + f.recibido, 0);
+    doc.autoTable({
+      startY: doc.lastAutoTable.finalY + 6,
+      head: [['Código', 'Cód. de barras', 'Descripción', 'Env.', 'Rec.', 'Dif.', 'Estado']],
+      body: filas.map(f => [f.c || '-', f.b || '-', f.d, nf(f.enviado), nf(f.recibido), (f.dif > 0 ? '+' : '') + nf(f.dif), ESTADOS[f.estado]]),
+      foot: [['', '', 'Totales', nf(env), nf(rcb), (rcb - env > 0 ? '+' : '') + nf(rcb - env), '']],
+      styles: { fontSize: 8.5, cellPadding: 1.8, lineColor: [215, 220, 228], lineWidth: 0.1 },
+      headStyles: { fillColor: AZUL }, footStyles: { fillColor: [236, 240, 246], textColor: 25, fontStyle: 'bold' },
+      columnStyles: { 0: { cellWidth: 20 }, 1: { cellWidth: 28 }, 3: { cellWidth: 13, halign: 'right' }, 4: { cellWidth: 13, halign: 'right' }, 5: { cellWidth: 13, halign: 'right', fontStyle: 'bold' }, 6: { cellWidth: 21 } },
+      didParseCell: d => {
+        if (d.section === 'foot' && d.column.index >= 3 && d.column.index <= 5) d.cell.styles.halign = 'right';
+        if (d.section !== 'body') return; const f = filas[d.row.index];
+        if (f.estado === 'faltante') d.cell.styles.fillColor = [253, 232, 226]; else if (f.estado !== 'ok') d.cell.styles.fillColor = [255, 244, 214];
+      },
+      didDrawPage: () => encabezadoPDF(doc, 'Control de recepción'), margin: { top: 24, left: 14, right: 14, bottom: 18 }
+    });
+    let y = doc.lastAutoTable.finalY + 30;
+    if (y > 270) { doc.addPage(); encabezadoPDF(doc, 'Control de recepción'); y = 50; }
+    doc.setDrawColor(90); doc.setFontSize(9); doc.setTextColor(80);
+    doc.line(14, y, 86, y); doc.text('Recibió: firma y aclaración', 14, y + 5);
+    doc.line(W - 86, y, W - 14, y); doc.text('Controló: firma y aclaración', W - 86, y + 5);
+    const n = doc.getNumberOfPages(), gen = `Generado el ${fmtFH(new Date().toISOString())}`;
+    for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(120); doc.text(gen, 14, H - 8); doc.text(`Página ${i} de ${n}`, W - 14, H - 8, { align: 'right' }); }
+    doc.save(nombre); toast('PDF generado.');
+  } catch (e) { console.error(e); toast('No se pudo generar el PDF.', 'err'); }
 }
 
 /* ---------- Exportar a Excel ---------- */
@@ -685,11 +1050,9 @@ function exportarExcel(lista, nombre) {
     for (const s of lista) for (const l of ordenar(s))
       det.push([s.id, fmtFecha(s.inicio), fmtHora(s.inicio), s.fin ? fmtHora(s.fin) : '', TIPOS[s.tipo], s.origen, s.destino || '', s.persona, s.ref || '', String(l.c || ''), String(l.b || ''), l.d, l.q, l.nc ? 'No catalogado' : 'OK']);
     XLSX.utils.book_append_sheet(wb, hoja(det, [20, 11, 10, 9, 20, 18, 18, 18, 16, 14, 16, 40, 9, 14]), 'Detalle');
-
     const res = [['ID lectura', 'Tipo', 'Depósito origen', 'Depósito destino', 'Responsable', 'Referencia', 'Inicio', 'Fin', 'Estado', 'Artículos distintos', 'Unidades', 'No catalogados']];
     for (const s of lista) res.push([s.id, TIPOS[s.tipo], s.origen, s.destino || '', s.persona, s.ref || '', fmtFH(s.inicio), s.fin ? fmtFH(s.fin) : '', s.fin ? 'Finalizada' : 'En curso', s.lines.length, unidades(s), noCatalogados(s)]);
     XLSX.utils.book_append_sheet(wb, hoja(res, [20, 20, 18, 18, 18, 16, 16, 16, 11, 10, 10, 10]), 'Lecturas');
-
     if (lista.length > 1) {
       const agg = new Map();
       for (const s of lista) for (const l of s.lines) {
@@ -779,13 +1142,21 @@ function exportarPDF(lista, nombre) {
 }
 
 /* ---------- Pantalla: ajustes ---------- */
-let importacion = null; // { filas, encabezado, archivo }
+let importacion = null;
 function renderAjustes() {
+  const n = pendientes().length, admin = esAdmin();
   $('#main').innerHTML = `
     <h1 class="h">Ajustes</h1>
     <section class="block">
+      <h2 class="h2">Tu sesión</h2>
+      <p>Ingresaste como <b>${esc(sesion.usuario.nombre)}</b><span class="chip-rol">${admin ? 'Administrador' : 'Operador'}</span></p>
+      <p class="muted small">${n ? `Hay ${n} ${n === 1 ? 'lectura' : 'lecturas'} en este teléfono sin subir al servidor.` : 'Todas las lecturas de este teléfono están guardadas en el servidor.'}</p>
+      <div class="row"><button class="btn ghost" id="btnSync">Sincronizar ahora</button><button class="btn ghost" id="btnSalir">Cerrar sesión</button></div>
+    </section>
+    ${admin ? `
+    <section class="block">
       <h2 class="h2">Catálogo de artículos</h2>
-      ${catalog ? `<p>${nf(catalog.items.length)} artículos, importados el ${fmtFH(catalog.importado)} desde <b>${esc(catalog.archivo)}</b>.</p>` : `<p class="muted">Todavía no hay catálogo. Importalo desde un archivo CSV o Excel exportado del sistema de gestión.</p>`}
+      ${catalog ? `<p>${nf(catalog.items.length)} artículos, importados el ${fmtFH(catalog.importado)}${catalog.importadoPor ? ` por ${esc(catalog.importadoPor)}` : ''} desde <b>${esc(catalog.archivo)}</b>.</p>` : `<p class="muted">Todavía no hay catálogo. Importalo desde un archivo CSV o Excel exportado del sistema de gestión. Va a estar disponible en todos los teléfonos.</p>`}
       <div class="row">
         <label class="btn primary" for="fCat">${catalog ? 'Reemplazar catálogo' : 'Importar catálogo'}</label>
         <button class="btn ghost" id="btnPlantilla">Descargar plantilla</button>
@@ -794,58 +1165,106 @@ function renderAjustes() {
       <div id="mapeo"></div>
     </section>
     <section class="block"><h2 class="h2">Depósitos</h2><div id="edDep"></div></section>
-    <section class="block"><h2 class="h2">Responsables</h2><div id="edPer"></div></section>
+    <section class="block"><h2 class="h2">Usuarios</h2><p class="muted small">Cada persona ingresa con su nombre y su PIN. Las lecturas quedan registradas a su nombre.</p><div id="edUsr">Cargando…</div></section>
+    ` : `
+    <section class="block">
+      <h2 class="h2">Catálogo</h2>
+      <p class="muted">${catalog ? `${nf(catalog.items.length)} artículos, actualizado el ${fmtFH(catalog.importado)}.` : 'Todavía no hay catálogo cargado.'} El catálogo, los depósitos y los usuarios los administra un administrador.</p>
+    </section>`}
     <section class="block">
       <h2 class="h2">Avisos al escanear</h2>
-      <label class="check"><input type="checkbox" id="cSon" ${config.sonido ? 'checked' : ''}> Sonido</label>
-      <label class="check"><input type="checkbox" id="cVib" ${config.vibrar ? 'checked' : ''}> Vibración</label>
+      <label class="check"><input type="checkbox" id="cSon" ${prefs.sonido ? 'checked' : ''}> Sonido</label>
+      <label class="check"><input type="checkbox" id="cVib" ${prefs.vibrar ? 'checked' : ''}> Vibración</label>
     </section>
+    ${admin ? `
     <section class="block">
-      <h2 class="h2">Copia de seguridad</h2>
-      <p class="muted small">Las lecturas se guardan solo en este teléfono. Descargá una copia de vez en cuando. La misma copia sirve para pasar el catálogo, los depósitos y los responsables a otro teléfono.</p>
-      <div class="row">
-        <button class="btn ghost" id="btnBackup">Descargar copia</button>
-        <label class="btn ghost" for="fRest">Restaurar copia</label>
-      </div>
+      <h2 class="h2">Traer datos de la versión anterior</h2>
+      <p class="muted small">Si usaste la app de GitHub Pages, descargá allí una copia desde Ajustes y cargala acá. Se suman sus depósitos y lecturas; el catálogo se reemplaza solo si lo confirmás.</p>
+      <label class="btn ghost" for="fRest">Cargar copia anterior</label>
       <input type="file" id="fRest" class="hidden" accept=".json,application/json">
-    </section>
+    </section>` : ''}
     <p class="muted small">Versión ${APP_VERSION}</p>`;
-  editorLista('#edDep', 'depositos', 'Nombre del depósito');
-  editorLista('#edPer', 'personas', 'Nombre y apellido');
-  $('#cSon').onchange = e => { config.sonido = e.target.checked; saveConfig(); };
-  $('#cVib').onchange = e => { config.vibrar = e.target.checked; saveConfig(); };
-  $('#btnPlantilla').onclick = () => descargar(new Blob(['\uFEFFcodigo;codigo_barras;descripcion\r\nART-0001;7790000000017;Ejemplo látex interior blanco 20 L\r\nART-0002;7790000000024;Ejemplo esmalte sintético negro 1 L\r\n'], { type: 'text/csv;charset=utf-8' }), 'plantilla_catalogo.csv');
-  $('#fCat').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) leerCatalogo(f); };
-  $('#btnBackup').onclick = () => {
-    const data = { app: 'pintolindo-lecturas', version: 1, exportado: new Date().toISOString(), config, catalog, sessions };
-    descargar(new Blob([JSON.stringify(data)], { type: 'application/json' }), `copia_lecturas_${sello()}.json`);
+  $('#btnSync').onclick = async () => { await sincronizar(); await cargarDatos(); toast(pendientes().length ? 'No se pudo subir todo. Revisá la conexión.' : 'Todo sincronizado.'); renderAjustes(); };
+  $('#btnSalir').onclick = async () => {
+    await sincronizar();
+    if (pendientes().length) return toast('Hay lecturas sin subir. Conectate a internet y sincronizá antes de cerrar sesión.', 'err');
+    if (activeSession()) return toast('Finalizá la lectura en curso antes de cerrar sesión.', 'err');
+    if (!confirm('¿Cerrar sesión en este teléfono?')) return;
+    sesion = null; store.set('auth', null); locales = []; guardarLocales(); ultimasVistas = []; render();
   };
-  $('#fRest').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (f) restaurar(f); };
+  $('#cSon').onchange = e => { prefs.sonido = e.target.checked; savePrefs(); };
+  $('#cVib').onchange = e => { prefs.vibrar = e.target.checked; savePrefs(); };
+  if (!admin) return;
+  $('#btnPlantilla').onclick = () => descargar(new Blob(['\uFEFFcodigo;codigo_barras;descripcion\r\nART-0001;7790000000017;Ejemplo látex interior blanco 20 L\r\nART-0002;;Ejemplo rodillo antigota 23 cm\r\n'], { type: 'text/csv;charset=utf-8' }), 'plantilla_catalogo.csv');
+  $('#fCat').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) leerCatalogo(f); };
+  $('#fRest').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) importarCopia(f); };
+  editorDepositos(); editorUsuarios();
   if (importacion) pintarMapeo();
 }
 
-function editorLista(sel, clave, ph) {
-  const cont = $(sel);
-  const pintar = () => {
-    cont.innerHTML = `
-      <ul class="editable">${config[clave].map((x, i) => `<li>${clave === 'depositos' ? depChip(x) : esc(x)}<button data-i="${i}" aria-label="Quitar ${esc(x)}">Quitar</button></li>`).join('') || `<li class="muted">Todavía no hay ninguno.</li>`}</ul>
-      <div class="add-row"><input placeholder="${ph}" aria-label="${ph}"><button class="btn primary">Agregar</button></div>`;
-    const inp = $('input', cont);
-    const add = () => {
-      const v = inp.value.trim().replace(/\s+/g, ' '); if (!v) return;
-      if (config[clave].some(x => normText(x) === normText(v))) return toast('Ya está en la lista.', 'err');
-      config[clave].push(v); config[clave].sort((a, b) => a.localeCompare(b, 'es')); saveConfig(); pintar(); $('input', cont).focus();
-    };
-    $('.add-row button', cont).onclick = add;
-    inp.onkeydown = e => { if (e.key === 'Enter') add(); };
-    $('ul', cont).onclick = e => {
-      const b = e.target.closest('button[data-i]'); if (!b) return;
-      const x = config[clave][+b.dataset.i];
-      if (!confirm(`¿Quitar ${x} de la lista? Las lecturas ya hechas no cambian.`)) return;
-      config[clave].splice(+b.dataset.i, 1); saveConfig(); pintar();
-    };
+function editorDepositos() {
+  const cont = $('#edDep'); if (!cont) return;
+  cont.innerHTML = `
+    <ul class="editable">${depositos.map(d => `<li>${depChip(d.nombre)}<button data-id="${d.id}" aria-label="Quitar ${esc(d.nombre)}">Quitar</button></li>`).join('') || `<li class="muted">Todavía no hay ninguno.</li>`}</ul>
+    <div class="add-row"><input placeholder="Nombre del depósito" aria-label="Nombre del depósito"><button class="btn primary">Agregar</button></div>`;
+  const inp = $('input', cont);
+  const add = async () => {
+    const v = inp.value.trim(); if (!v) return;
+    try { depositos = await api('POST', '/api/depositos', { nombre: v }); store.set('depositos', depositos); editorDepositos(); $('#edDep input').focus(); }
+    catch (e) { toast(e.offline ? 'Para cambiar los depósitos necesitás conexión.' : e.message, 'err'); }
   };
-  pintar();
+  $('.add-row button', cont).onclick = add;
+  inp.onkeydown = e => { if (e.key === 'Enter') add(); };
+  $('ul', cont).onclick = async e => {
+    const b = e.target.closest('button[data-id]'); if (!b) return;
+    const d = depositos.find(x => String(x.id) === b.dataset.id);
+    if (!confirm(`¿Quitar ${d.nombre} de la lista? Las lecturas ya hechas no cambian.`)) return;
+    try { depositos = await api('DELETE', '/api/depositos/' + d.id); store.set('depositos', depositos); editorDepositos(); }
+    catch (e) { toast(e.offline ? 'Para cambiar los depósitos necesitás conexión.' : e.message, 'err'); }
+  };
+}
+
+async function editorUsuarios(lista) {
+  const cont = $('#edUsr'); if (!cont) return;
+  if (!lista) {
+    try { lista = await api('GET', '/api/usuarios'); }
+    catch (e) { cont.innerHTML = `<p class="muted">${e.offline ? 'Sin conexión: no se pueden ver los usuarios.' : esc(e.message)}</p>`; return; }
+  }
+  if (!$('#edUsr')) return;
+  cont.innerHTML = `
+    <div>${lista.map(u => `
+      <div class="user-row ${u.activo ? '' : 'inactivo'}">
+        <div class="who"><b>${esc(u.nombre)}</b><span class="chip-rol">${u.rol === 'admin' ? 'Administrador' : 'Operador'}</span><small>${u.activo ? 'Activo' : 'Desactivado'}</small></div>
+        <div class="user-acts">
+          <button class="btn ghost" data-act="pin" data-id="${u.id}">Cambiar PIN</button>
+          <button class="btn ghost" data-act="rol" data-id="${u.id}">${u.rol === 'admin' ? 'Hacer operador' : 'Hacer administrador'}</button>
+          <button class="btn ${u.activo ? 'danger' : 'ghost'}" data-act="activo" data-id="${u.id}">${u.activo ? 'Desactivar' : 'Activar'}</button>
+        </div>
+      </div>`).join('')}</div>
+    <h3 class="h2" style="font-size:19px;margin-top:16px">Agregar usuario</h3>
+    <label class="field"><span>Nombre y apellido</span><input id="uNombre" autocomplete="off"></label>
+    <div class="grid2">
+      <label class="field"><span>PIN (4 a 8 números)</span><input id="uPin" inputmode="numeric" maxlength="8" autocomplete="off"></label>
+      <label class="field"><span>Rol</span><select id="uRol"><option value="operador">Operador</option><option value="admin">Administrador</option></select></label>
+    </div>
+    <button class="btn primary" id="uAdd">Agregar usuario</button>`;
+  const err = e => toast(e.offline ? 'Para administrar usuarios necesitás conexión.' : e.message, 'err');
+  $('#uAdd').onclick = async () => {
+    try { const l = await api('POST', '/api/usuarios', { nombre: $('#uNombre').value, pin: $('#uPin').value, rol: $('#uRol').value }); toast('Usuario agregado.'); editorUsuarios(l); cargarDatos(); }
+    catch (e) { err(e); }
+  };
+  cont.querySelectorAll('.user-acts button').forEach(b => b.onclick = async () => {
+    const u = lista.find(x => String(x.id) === b.dataset.id); let cuerpo;
+    if (b.dataset.act === 'pin') { const p = prompt(`Nuevo PIN para ${u.nombre} (4 a 8 números)`); if (p === null) return; cuerpo = { pin: p.trim() }; }
+    if (b.dataset.act === 'rol') cuerpo = { rol: u.rol === 'admin' ? 'operador' : 'admin' };
+    if (b.dataset.act === 'activo') { if (u.activo && !confirm(`¿Desactivar a ${u.nombre}? No va a poder ingresar, pero sus lecturas se conservan.`)) return; cuerpo = { activo: !u.activo }; }
+    try {
+      const l = await api('PATCH', '/api/usuarios/' + u.id, cuerpo);
+      toast(b.dataset.act === 'pin' ? 'PIN cambiado.' : 'Usuario actualizado.');
+      if (u.id === sesion.usuario.id && (b.dataset.act === 'pin' || cuerpo.activo === false)) return vencida('Cambiaste tu propio PIN. Volvé a ingresar.');
+      editorUsuarios(l); cargarDatos();
+    } catch (e) { err(e); }
+  });
 }
 
 /* Lectura del archivo de catálogo */
@@ -878,7 +1297,6 @@ async function leerCatalogo(f) {
     }
     filas = filas.map(r => r.map(v => typeof v === 'number' ? (Number.isInteger(v) ? v.toFixed(0) : String(v)) : String(v ?? '').trim())).filter(r => r.some(c => c !== ''));
     if (filas.length < 2) return toast('El archivo no tiene filas para importar.', 'err');
-    // Busca la fila de encabezados entre las primeras 10
     let h = 0;
     for (let i = 0; i < Math.min(10, filas.length); i++) { const g = adivinar(filas[i]); if ((g.c >= 0 || g.b >= 0) && g.d >= 0) { h = i; break; } }
     importacion = { archivo: f.name, encabezado: filas[h], filas: filas.slice(h + 1), mapa: adivinar(filas[h]) };
@@ -920,36 +1338,40 @@ function pintarMapeo() {
     ${sel('mD', 'd', 'Descripción')}
     <div class="tbl-wrap map-preview"><table class="tbl"><thead><tr><th>Código</th><th>Código de barras</th><th>Descripción</th></tr></thead>
       <tbody>${r.items.slice(0, 5).map(it => `<tr><td>${esc(it.c || '-')}</td><td>${esc(it.b.join(', ') || '-')}</td><td>${esc(it.d)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">No hay filas válidas con esta selección.</td></tr>'}</tbody></table></div>
-    <p class="small">${nf(r.items.length)} artículos para importar.${r.sinBarras ? ` ${nf(r.sinBarras)} no tienen código de barras: se podrán agregar buscándolos por descripción.` : ''}${r.repetidos ? ` Hay ${nf(r.repetidos)} códigos de barras repetidos en más de un artículo: se usará el primero.` : ''}</p>
+    <p class="small">${nf(r.items.length)} artículos para importar.${r.sinBarras ? ` ${nf(r.sinBarras)} no tienen código de barras: se podrán agregar escaneando su código interno o buscándolos por descripción.` : ''}${r.repetidos ? ` Hay ${nf(r.repetidos)} códigos de barras repetidos en más de un artículo: se usará el primero.` : ''}</p>
     <div class="row"><button class="btn primary" id="mOk" ${r.items.length ? '' : 'disabled'}>Importar ${nf(r.items.length)} artículos</button><button class="btn ghost" id="mNo">Cancelar</button></div>`;
   const cambio = (id, k) => $(id).onchange = e => { imp.mapa[k] = +e.target.value; pintarMapeo(); };
   cambio('#mC', 'c'); cambio('#mB', 'b'); cambio('#mD', 'd');
   $('#mNo').onclick = () => { importacion = null; cont.innerHTML = ''; };
-  $('#mOk').onclick = () => {
+  $('#mOk').onclick = async () => {
     if (imp.mapa.d < 0) return toast('Elegí la columna de descripción.', 'err');
-    const nuevo = { archivo: imp.archivo, importado: new Date().toISOString(), items: armarItems().items };
-    if (!store.set('catalog', nuevo)) return;
-    catalog = nuevo; indexar(); importacion = null;
-    toast(`Catálogo importado: ${nf(catalog.items.length)} artículos.`); renderAjustes();
+    $('#mOk').disabled = true; $('#mOk').textContent = 'Subiendo…';
+    try {
+      catalog = await api('PUT', '/api/catalogo', { archivo: imp.archivo, items: armarItems().items });
+      store.set('catalog', catalog); indexar(); importacion = null;
+      toast(`Catálogo importado: ${nf(catalog.items.length)} artículos. Ya está disponible en todos los teléfonos.`); renderAjustes();
+    } catch (e) {
+      toast(e.offline ? 'Para importar el catálogo necesitás conexión.' : e.message, 'err');
+      if ($('#mOk')) { $('#mOk').disabled = false; $('#mOk').textContent = 'Reintentar'; }
+    }
   };
 }
 
-async function restaurar(f) {
+async function importarCopia(f) {
   try {
-    const data = JSON.parse(await f.text());
-    if (data.app !== 'pintolindo-lecturas') return toast('Ese archivo no es una copia de esta app.', 'err');
-    if (!confirm('Se van a reemplazar el catálogo, los depósitos y los responsables por los de la copia, y se van a sumar las lecturas que no estén en este teléfono. ¿Continuar?')) return;
-    if (data.config) { config = Object.assign(config, { depositos: data.config.depositos || [], personas: data.config.personas || [] }); saveConfig(); }
-    if (data.catalog) { catalog = data.catalog; store.set('catalog', catalog); indexar(); }
-    const ids = new Set(sessions.map(s => s.id)); let n = 0;
-    for (const s of data.sessions || []) if (!ids.has(s.id)) { sessions.push(s); n++; }
-    sessions.sort((a, b) => b.inicio.localeCompare(a.inicio)); saveSessions();
-    toast(`Copia restaurada. Se sumaron ${nf(n)} lecturas.`); renderAjustes();
-  } catch (e) { console.error(e); toast('No se pudo leer la copia.', 'err'); }
+    const copia = JSON.parse(await f.text());
+    if (copia.app !== 'pintolindo-lecturas') return toast('Ese archivo no es una copia de esta app.', 'err');
+    const nArt = copia.catalog?.items?.length || 0;
+    const reemplazarCatalogo = nArt > 0 && confirm(`La copia trae un catálogo de ${nf(nArt)} artículos. ¿Reemplazar el catálogo actual del servidor por ese?`);
+    const r = await api('POST', '/api/importar-copia', { copia, reemplazarCatalogo });
+    toast(`Listo: ${r.depositos} depósitos y ${r.lecturas} lecturas nuevas${r.articulos ? `, catálogo de ${nf(r.articulos)} artículos` : ''}.`);
+    await cargarDatos(); renderAjustes();
+  } catch (e) { toast(e.offline ? 'Para cargar la copia necesitás conexión.' : (e.message || 'No se pudo leer la copia.'), 'err'); }
 }
 
 /* ---------- Inicio ---------- */
 render();
+if (sesion) { cargarDatos(); sincronizar(); }
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => { });
 </script>
 </body>
